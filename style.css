@@ -1,167 +1,56 @@
 /* --- GERAL E FONTES --- */
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-    background: #2c3e50;
-    color: #333;
-}
+body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #2c3e50; color: #333; }
+.hidden { display: none !important; }
 
-.hidden {
-    display: none !important;
-}
-
-/* --- MENU PRINCIPAL --- */
-#main-menu-container {
-    text-align: center;
-    padding: 40px;
-    background-color: white;
-    border-radius: 15px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    width: 350px;
-}
-
-.game-title {
-    font-size: 48px;
-    color: #2c3e50;
-    margin: 0;
-}
-
-.game-subtitle {
-    font-size: 16px;
-    color: #7f8c8d;
-    margin-bottom: 30px;
-}
+/* --- MENU E SETUP --- */
+#main-menu-container, #setup-container { text-align: center; padding: 40px; background-color: white; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+#main-menu-container { width: 350px; }
+#setup-container { width: 500px; }
+.game-title { font-size: 48px; color: #2c3e50; margin: 0; }
+.game-subtitle { font-size: 16px; color: #7f8c8d; margin-bottom: 30px; }
+.setup-section { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #ecf0f1; }
+.input-group { margin-bottom: 15px; text-align: left; }
+.input-group label { display: block; margin-bottom: 5px; }
+.input-group input, .input-group select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+.animal-input-group { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.animal-input-group label { flex-grow: 1; }
 
 /* --- BOTÕES --- */
-button {
-    display: block;
-    width: 100%;
-    padding: 15px 20px;
-    border: none;
-    background-color: #3498db;
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 18px;
-    margin-top: 15px;
-    transition: background-color 0.2s, transform 0.2s;
-}
-
-button:hover {
-    background-color: #2980b9;
-    transform: translateY(-2px);
-}
-
-.btn-secondary {
-    background-color: #95a5a6;
-}
-.btn-secondary:hover {
-    background-color: #7f8c8d;
-}
-
-.btn-disabled {
-    background-color: #bdc3c7;
-    cursor: not-allowed;
-}
-
-/* --- TELA DE CONFIGURAÇÃO --- */
-#setup-container {
-    padding: 30px;
-    border-radius: 10px;
-    background-color: white;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    width: 500px;
-}
-
-.setup-section {
-    margin-bottom: 20px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #ecf0f1;
-}
-
-.input-group {
-    margin-bottom: 15px;
-}
-
-.input-group label {
-    display: block;
-    margin-bottom: 5px;
-}
-
-.input-group input, .input-group select {
-    width: 100%;
-    padding: 10px;
-    box-sizing: border-box;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-.animal-input-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-.animal-input-group label {
-    flex-grow: 1;
-}
+button { display: block; width: 100%; padding: 15px 20px; border: none; background-color: #3498db; color: white; border-radius: 8px; cursor: pointer; font-size: 18px; margin-top: 15px; transition: background-color 0.2s, transform 0.2s; }
+button:hover { background-color: #2980b9; transform: translateY(-2px); }
+.btn-secondary { background-color: #95a5a6; }
+.btn-secondary:hover { background-color: #7f8c8d; }
+.btn-danger { background-color: #e74c3c; position: absolute; bottom: 20px; width: calc(100% - 40px); }
+.btn-danger:hover { background-color: #c0392b; }
+.btn-disabled { background-color: #bdc3c7; cursor: not-allowed; }
+.btn-interaction { font-size: 14px; padding: 10px; margin-top: 8px; background-color: #2ecc71; }
+.btn-interaction:hover { background-color: #27ae60; }
+.btn-interaction.active { background-color: #f1c40f; color: #333; }
 
 /* --- TELA DO JOGO --- */
-#game-container {
-    display: flex;
-    gap: 20px;
-}
+#game-container { display: flex; gap: 20px; }
+#world { width: 800px; height: 600px; border: 2px solid #333; position: relative; background-size: cover; overflow: hidden; background-color: #fff; cursor: default; }
+#world.placing-mode { cursor: copy; }
+#info-panel { width: 220px; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); position: relative; }
+#animal-counts { margin: 15px 0; font-size: 14px; }
+.panel-subtitle { text-align: center; color: #7f8c8d; border-bottom: 1px solid #ecf0f1; padding-bottom: 5px; margin-top: 20px; }
 
-#world {
-    width: 800px;
-    height: 600px;
-    border: 2px solid #333;
-    position: relative;
-    background-size: cover;
-    overflow: hidden;
-    background-color: #fff;
-}
-
-/* --- CENÁRIOS (IMAGENS LOCAIS) --- */
+/* --- CENÁRIOS E ENTIDADES --- */
 .world-aquario { background-image: url('images/aquario_fundo.jpg'); }
 .world-floresta { background-image: url('images/floresta_fundo.jpg'); }
 .world-deserto { background-image: url('images/deserto_fundo.jpg'); }
 
-#info-panel {
-    width: 220px;
-    padding: 20px;
-    background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
+.entity { position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center; transition: opacity 0.5s, transform 0.5s; }
+.animal { z-index: 10; cursor: grab; }
+.animal.dragging { z-index: 100; cursor: grabbing; transform: scale(1.1); }
+.comida, .agua { z-index: 5; }
 
-#animal-counts {
-    margin-top: 15px;
-    font-size: 14px;
-}
-
-/* --- ENTIDADES (IMAGENS LOCAIS) --- */
-.entity {
-    position: absolute;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    transition: width 0.5s, height 0.5s, opacity 0.5s, transform 0.5s;
-}
-
-.animal { z-index: 10; }
-.comida { z-index: 5; }
-.agua { z-index: 5; }
-
-.rato { width: 50px; height: 50px; background-image: url('images/rato.png'); }
-.coelho { width: 55px; height: 55px; background-image: url('images/coelho.png'); }
-.animal.filhote { width: 25px; height: 25px; }
+/* AJUSTE DE TAMANHO DOS ANIMAIS */
+.rato { width: 60px; height: 60px; background-image: url('images/rato.png'); }
+.coelho { width: 65px; height: 65px; background-image: url('images/coelho.png'); }
+.animal.filhote { width: 30px; height: 30px; }
 
 .racao { width: 25px; height: 25px; background-image: url('images/racao.png'); }
 .grama { width: 30px; height: 30px; background-image: url('images/grama.png'); }
-
 .bebedouro { width: 60px; height: 60px; background-image: url('images/bebedouro.png'); }
+.pedra { width: 70px; height: 70px; background-image: url('images/pedra.png'); z-index: 20; }
