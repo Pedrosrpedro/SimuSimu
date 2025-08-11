@@ -1,28 +1,90 @@
+/* --- GERAL E FONTES --- */
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     margin: 0;
-    background-color: #f0f0f0;
+    background: #2c3e50;
+    color: #333;
 }
 
-#setup-container {
+.hidden {
+    display: none !important;
+}
+
+/* --- MENU PRINCIPAL --- */
+#main-menu-container {
     text-align: center;
+    padding: 40px;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    width: 350px;
+}
+
+.game-title {
+    font-size: 48px;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.game-subtitle {
+    font-size: 16px;
+    color: #7f8c8d;
+    margin-bottom: 30px;
+}
+
+/* --- BOTÕES --- */
+button {
+    display: block;
+    width: 100%;
+    padding: 15px 20px;
+    border: none;
+    background-color: #3498db;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 18px;
+    margin-top: 15px;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+button:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background-color: #95a5a6;
+}
+.btn-secondary:hover {
+    background-color: #7f8c8d;
+}
+
+.btn-disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+/* --- TELA DE CONFIGURAÇÃO --- */
+#setup-container {
     padding: 30px;
     border-radius: 10px;
     background-color: white;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    width: 500px;
 }
 
-#setup-container h1 {
+.setup-section {
     margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #ecf0f1;
 }
 
 .input-group {
     margin-bottom: 15px;
-    text-align: left;
 }
 
 .input-group label {
@@ -32,26 +94,23 @@ body {
 
 .input-group input, .input-group select {
     width: 100%;
-    padding: 8px;
+    padding: 10px;
     box-sizing: border-box;
-}
-
-button {
-    padding: 10px 20px;
-    border: none;
-    background-color: #007bff;
-    color: white;
+    border: 1px solid #ccc;
     border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
-    width: 100%;
 }
 
-button:hover {
-    background-color: #0056b3;
+.animal-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.animal-input-group label {
+    flex-grow: 1;
 }
 
+/* --- TELA DO JOGO --- */
 #game-container {
     display: flex;
     gap: 20px;
@@ -64,61 +123,45 @@ button:hover {
     position: relative;
     background-size: cover;
     overflow: hidden;
+    background-color: #fff;
 }
 
-/* --- CENÁRIOS --- */
-.world-aquario {
-    background-image: url('https://i.postimg.cc/pXkSSy38/aquario-fundo.jpg');
-}
-.world-floresta {
-    background-image: url('https://i.postimg.cc/k47g1cfL/floresta-fundo.jpg');
-}
-.world-deserto {
-    background-image: url('https://i.postimg.cc/rmT4pWdB/deserto-fundo.jpg');
-}
-
-
-.hidden {
-    display: none !important;
-}
-
-.rato, .racao, .bebedouro {
-    position: absolute;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    transition: width 0.5s, height 0.5s, opacity 0.5s;
-}
-
-.rato {
-    width: 50px;
-    height: 50px;
-    background-image: url('https://i.postimg.cc/Y0Vt6s6B/rato.png');
-    z-index: 10;
-}
-
-.rato.filhote {
-    width: 25px;
-    height: 25px;
-}
-
-.racao {
-    width: 25px;
-    height: 25px;
-    background-image: url('https://i.postimg.cc/TYGf5C0f/racao.png');
-}
-
-.bebedouro {
-    width: 60px;
-    height: 60px;
-    background-image: url('https://i.postimg.cc/8cT2WJgC/bebedouro.png');
-}
+/* --- CENÁRIOS (IMAGENS LOCAIS) --- */
+.world-aquario { background-image: url('images/aquario_fundo.jpg'); }
+.world-floresta { background-image: url('images/floresta_fundo.jpg'); }
+.world-deserto { background-image: url('images/deserto_fundo.jpg'); }
 
 #info-panel {
-    width: 200px;
+    width: 220px;
     padding: 20px;
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    text-align: center;
 }
+
+#animal-counts {
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+/* --- ENTIDADES (IMAGENS LOCAIS) --- */
+.entity {
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    transition: width 0.5s, height 0.5s, opacity 0.5s, transform 0.5s;
+}
+
+.animal { z-index: 10; }
+.comida { z-index: 5; }
+.agua { z-index: 5; }
+
+.rato { width: 50px; height: 50px; background-image: url('images/rato.png'); }
+.coelho { width: 55px; height: 55px; background-image: url('images/coelho.png'); }
+.animal.filhote { width: 25px; height: 25px; }
+
+.racao { width: 25px; height: 25px; background-image: url('images/racao.png'); }
+.grama { width: 30px; height: 30px; background-image: url('images/grama.png'); }
+
+.bebedouro { width: 60px; height: 60px; background-image: url('images/bebedouro.png'); }
