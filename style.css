@@ -1,0 +1,124 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+#setup-container {
+    text-align: center;
+    padding: 30px;
+    border-radius: 10px;
+    background-color: white;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+#setup-container h1 {
+    margin-bottom: 20px;
+}
+
+.input-group {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.input-group input, .input-group select {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
+    width: 100%;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#game-container {
+    display: flex;
+    gap: 20px;
+}
+
+#world {
+    width: 800px;
+    height: 600px;
+    border: 2px solid #333;
+    position: relative;
+    background-size: cover;
+    overflow: hidden;
+}
+
+/* --- CENÁRIOS --- */
+.world-aquario {
+    background-image: url('https://i.postimg.cc/pXkSSy38/aquario-fundo.jpg');
+}
+.world-floresta {
+    background-image: url('https://i.postimg.cc/k47g1cfL/floresta-fundo.jpg');
+}
+.world-deserto {
+    background-image: url('https://i.postimg.cc/rmT4pWdB/deserto-fundo.jpg');
+}
+
+
+.hidden {
+    display: none !important;
+}
+
+.rato, .racao, .bebedouro {
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    transition: width 0.5s, height 0.5s, opacity 0.5s;
+}
+
+.rato {
+    width: 50px;
+    height: 50px;
+    background-image: url('https://i.postimg.cc/Y0Vt6s6B/rato.png');
+    z-index: 10;
+}
+
+.rato.filhote {
+    width: 25px;
+    height: 25px;
+}
+
+.racao {
+    width: 25px;
+    height: 25px;
+    background-image: url('https://i.postimg.cc/TYGf5C0f/racao.png');
+}
+
+.bebedouro {
+    width: 60px;
+    height: 60px;
+    background-image: url('https://i.postimg.cc/8cT2WJgC/bebedouro.png');
+}
+
+#info-panel {
+    width: 200px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    text-align: center;
+}
