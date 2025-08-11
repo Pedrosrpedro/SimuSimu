@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Simulações v2</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="setup-container">
+        <h1>Configurar Simulação</h1>
+        <div class="input-group">
+            <label for="scenario">Cenário:</label>
+            <select id="scenario">
+                <option value="aquario">Aquário</option>
+                <option value="floresta">Floresta</option>
+                <option value="deserto">Deserto</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="numRatos">Quantidade Inicial de Ratos:</label>
+            <input type="number" id="numRatos" value="4" min="2" max="20">
+        </div>
+        <div class="input-group">
+            <label for="numRacoes">Quantidade de Ração:</label>
+            <input type="number" id="numRacoes" value="8" min="1" max="30">
+        </div>
+        <div class="input-group">
+            <label for="numBebedouros">Quantidade de Bebedouros:</label>
+            <input type="number" id="numBebedouros" value="3" min="1" max="10">
+        </div>
+        <button id="iniciarSimulacao">Iniciar Simulação</button>
+    </div>
+
+    <div id="game-container" class="hidden">
+        <div id="world"></div>
+        <div id="info-panel">
+            <h2>Status da Simulação</h2>
+            <p>População de Ratos: <span id="ratosVivos">0</span></p>
+            <p>Tempo Decorrido: <span id="tempo">0</span>s</p>
+            <button id="adicionarComida">Adicionar Comida</button>
+            <button id="resetarSimulacao">Resetar</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
