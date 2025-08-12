@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const MAP_WIDTH = 800, MAP_HEIGHT = 600, HEALTH_BAR_THRESHOLD = 30;
     let gameInterval, currentSpeedMultiplier = 1;
     let animalInspecionado = null, isClickDrag = false, objetoSendoArrastado = null;
+    let populationChart; // Definida globalmente para ser acessível
 
     // === LÓGICA DE CLASSES ===
 
@@ -153,8 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
             this.elementoVisual.classList.toggle('active', modoTerritorio);
             this.elementoVisual.style.width = `${this.territorioRaio * 2}px`;
             this.elementoVisual.style.height = `${this.territorioRaio * 2}px`;
-            this.elementoVisual.style.left = `${this.abrigo.x + (this.abrigo.width / 2) - this.territorioRaio}px`;
-            this.elementoVisual.style.top = `${this.abrigo.y + (this.abrigo.height / 2) - this.territorioRaio}px`;
+            this.elementoVisual.style.left = `${this.abrigo.x + (this.abrigo?.width / 2 || 0) - this.territorioRaio}px`;
+            this.elementoVisual.style.top = `${this.abrigo.y + (this.abrigo?.height / 2 || 0) - this.territorioRaio}px`;
             this.elementoVisual.style.borderColor = this.cor;
             if (this.abrigo) {
                 this.abrigo.element.style.setProperty('--food-count', `'${this.recursos.comida}'`);
@@ -169,7 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
             this.membros.forEach(m => { if (m) { m.tribo = null; m.funcao = null; m.estado = 'Vagando'; }});
             if (this.abrigo) this.abrigo.remover();
             if (this.elementoVisual.parentElement) world.removeChild(this.elementoVisual);
-            tribos = tribos.filter(t => t.id !== this.id);
+            const index = tribos.findIndex(t => t.id === this.id);
+            if(index > -1) tribos.splice(index, 1);
         }
     }
 
@@ -204,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
     class Carcaca extends Entidade {
         constructor(x, y) { super(x, y, 'carcaca'); this.nutrientes = 100; this.timerDecomposicao = 400; }
         atualizar() {
-            this.timerDecomposicao -= currentSpeedMultiplier;
+            this.timerDecomposicao -= 1;
             this.element.style.opacity = this.timerDecomposicao / 400;
             if (this.timerDecomposicao <= 0 || this.nutrientes <= 0) {
                 this.remover();
@@ -220,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tipo, nome: `${tipo.charAt(0).toUpperCase() + tipo.slice(1)} #${Math.floor(Math.random()*1000)}`,
                 fome: 20, sede: 20, age: 0, reproductionUrge: 0,
                 velocidade: 1.5 + Math.random(), isMature: false, 
-                maxAge: 400 + Math.random() * 200, // BALANCE: Maior longevidade
+                maxAge: 400 + Math.random() * 200, 
                 gender: Math.random() > 0.5 ? 'male' : 'female', isGestating: false, gestationTimer: 0,
                 alvo: null, estado: 'Vagando', abrigo: null, frio: 0, oQueCome: DEFINICOES_ANIMAIS[tipo].come,
                 tribo: null, funcao: null, itemCarregado: null, vagarAlvo: null
@@ -233,11 +235,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         atualizar() {
             if (this.foiRemovido || objetoSendoArrastado === this) return;
-            const delta = 0.1 * currentSpeedMultiplier;
-            this.age += delta / 2; this.fome += delta; this.sede += delta * 1.2;
-            if (this.isMature) this.reproductionUrge += delta * 2.5; // BALANCE: Reprodução mais rápida
+            this.age += 0.05; this.fome += 0.2; this.sede += 0.25;
+            if (this.isMature) this.reproductionUrge += 0.5;
             if (!this.isMature && this.age > 20) { this.isMature = true; this.element.classList.remove('filhote'); }
-            if (this.isGestating) { this.gestationTimer -= delta; if(this.gestationTimer <= 0) this.darALuz(); }
+            if (this.isGestating) { this.gestationTimer -= 1; if(this.gestationTimer <= 0) this.darALuz(); }
             
             if (this.fome >= 100 || this.sede >= 100 || this.age >= this.maxAge) { this.morrer(); return; }
             
@@ -256,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (this.itemCarregado) { this.estado = 'Levando para Abrigo'; this.alvo = this.tribo.abrigo; return; }
                 switch (this.funcao) {
                     case 'Lider':
-                        if (this.isMature && this.gender === 'female' && !this.isGestating && this.reproductionUrge > 30) { // BALANCE: Limite menor para acasalar
+                        if (this.isMature && this.gender === 'female' && !this.isGestating && this.reproductionUrge > 30) {
                             const parceiro = this.encontrarMaisProximo(this.tribo.membros.filter(m => m.id !== this.id && m.gender === 'male' && m.isMature));
                             if (parceiro) { this.estado = 'Acasalando'; this.alvo = parceiro; return; }
                         }
@@ -284,9 +285,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const dx = this.alvo.x - this.x, dy = this.alvo.y - this.y, d = Math.hypot(dx, dy);
             const distMin = (this.estado === 'Atacando') ? 20 : 10;
             if (d < distMin) { this.interagirComAlvo(); return; }
-
-            let nX = this.x + (dx / d) * this.velocidade * currentSpeedMultiplier;
-            let nY = this.y + (dy / d) * this.velocidade * currentSpeedMultiplier;
+            let nX = this.x + (dx / d) * this.velocidade;
+            let nY = this.y + (dy / d) * this.velocidade;
             this.x = nX; this.y = nY;
         }
 
@@ -294,13 +294,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!this.alvo) return;
             switch(this.estado) {
                 case 'Atacando': this.alvo.morrer('combate', this.tribo); break;
-                case 'Coletando Comida': if(this.alvo instanceof Comida){ this.itemCarregado = this.alvo.tipo; this.alvo.remover(); } break;
+                case 'Coletando Comida': if(this.alvo instanceof Comida){ this.itemCarregado = this.alvo.tipo; this.alvo.remover(); comidas = comidas.filter(c => c.id !== this.alvo.id); } break;
                 case 'Levando para Abrigo': if (this.tribo) { this.tribo.recursos.comida++; this.itemCarregado = null; } break;
                 case 'Comendo no Abrigo': if (this.tribo && this.tribo.recursos.comida > 0) { this.tribo.recursos.comida--; this.fome = Math.max(0, this.fome - 80); } break;
-                case 'Fundando Tribo': this.abrigo = new Abrigo(this.x, this.y); abrigos.push(this.abrigo); new Tribe(this); break;
-                case 'Acasalando': if (this.alvo instanceof Animal) { this.isGestating = true; this.gestationTimer = 150 / currentSpeedMultiplier; this.reproductionUrge = 0; } break;
+                case 'Fundando Tribo': this.abrigo = new Abrigo(this.x, this.y); abrigos.push(this.abrigo); tribos.push(new Tribe(this)); break;
+                case 'Acasalando': if (this.alvo instanceof Animal) { this.isGestating = true; this.gestationTimer = 150; this.reproductionUrge = 0; } break;
                 case 'Bebendo Água': if (this.alvo instanceof Agua) { this.sede = Math.max(0, this.sede - 80); this.alvo.refill?.(); } break;
-                case 'Buscando Comida': if (this.alvo instanceof Comida) { this.fome = Math.max(0, this.fome - 60); this.alvo.remover(); } break;
+                case 'Buscando Comida': if (this.alvo instanceof Comida) { this.fome = Math.max(0, this.fome - 60); this.alvo.remover(); comidas = comidas.filter(c => c.id !== this.alvo.id); } break;
             }
             this.alvo = null;
         }
@@ -324,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         darALuz() {
             this.isGestating = false;
-            const n = Math.floor(Math.random() * 4) + 1; // BALANCE: Ninhadas maiores
+            const n = Math.floor(Math.random() * 4) + 1;
             adicionarLog(`${this.nome} deu à luz a ${n} filhote(s)!`, 'nascimento');
             for(let i=0; i<n; i++) {
                 const filhote = new Animal(this.tipo, this.x + (Math.random()*20-10), this.y + (Math.random()*20-10));
@@ -336,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
         vagar() { this.alvo = { x: this.x + (Math.random() - 0.5) * 100, y: this.y + (Math.random() - 0.5) * 100 }; }
         vagarPertoDoAbrigo() { if(!this.tribo) return this.vagar(); this.alvo = { x: this.tribo.abrigo.x + (Math.random() - 0.5) * 150, y: this.tribo.abrigo.y + (Math.random() - 0.5) * 150 }; }
         vagarPelaBorda() { if(!this.tribo) return this.vagar(); const angulo = Math.random() * 2 * Math.PI; this.alvo = { x: this.tribo.abrigo.x + Math.cos(angulo) * this.tribo.territorioRaio, y: this.tribo.abrigo.y + Math.sin(angulo) * this.tribo.territorioRaio }; }
-        encontrarComida() { return this.encontrarMaisProximo(comidas); }
+        encontrarComida() { return this.encontrarMaisProximo(comidas.filter(c => this.oQueCome.includes(c.tipo))); }
         encontrarInimigo() { return this.encontrarMaisProximo(animais.filter(a => a.tribo && this.tribo && a.tribo.id !== this.tribo.id && this.tribo.diplomacia[a.tribo.id] === 'GUERRA')); }
         encontrarMaisProximo(lista) { return lista.reduce((maisProximo, atual) => { if (!atual || atual.foiRemovido) return maisProximo; const d = Math.hypot(this.x - atual.x, this.y - atual.y); if (!maisProximo || d < maisProximo.dist) return { alvo: atual, dist: d }; return maisProximo; }, null)?.alvo; }
 
@@ -359,9 +359,9 @@ document.addEventListener('DOMContentLoaded', () => {
         world.className = `world world-${scenarioSelect.value}`;
         
         tribos.forEach(t => t.dissolver());
-        [...animais, ...comidas, ...aguas, ...obstaculos, ...abrigos].forEach(e => e.remover());
+        [...animais, ...comidas, ...aguas, ...obstaculos, ...abrigos, ...carcacas].forEach(e => e.remover());
 
-        animais = []; comidas = []; aguas = []; obstaculos = []; abrigos = []; tribos = [];
+        animais = []; comidas = []; aguas = []; obstaculos = []; abrigos = []; tribos = []; carcacas = [];
         tempo = 0; statsHistory = []; logContainer.innerHTML = '';
         
         for(let i=0; i<parseInt(numAguaInput.value); i++) aguas.push(new Agua());
@@ -373,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function gameLoop() {
         if (!simulaçãoAtiva) return;
-        tempo += 0.1 * currentSpeedMultiplier;
+        tempo += 0.1;
         
         [...tribos].forEach(t => t.atualizarTribo());
         [...animais].forEach(a => a.atualizar());
@@ -397,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
         simulaçãoAtiva = m > 0;
         clearInterval(gameInterval);
         if (simulaçãoAtiva) {
-            gameInterval = setInterval(gameLoop, 50);
+            gameInterval = setInterval(gameLoop, 100 / currentSpeedMultiplier);
         }
         document.querySelectorAll('.btn-time').forEach(b => { b.classList.toggle('active', parseFloat(b.dataset.speed) === m); });
     }
@@ -449,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupChart() {
-        if(window.populationChart) window.populationChart.destroy();
+        if(populationChart) populationChart.destroy();
         const animalTypes = Object.keys(DEFINICOES_ANIMAIS);
         const datasets = animalTypes.map(tipo => {
             const color = tipo === 'rato' ? 'rgba(136, 136, 136, 0.8)' : 'rgba(212, 163, 115, 0.8)';
@@ -460,7 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
             label: 'Idade Média', data: [], borderColor: 'rgba(255, 255, 255, 0.7)',
             backgroundColor: 'rgba(255, 255, 255, 0.2)', yAxisID: 'y1', tension: 0.1
         });
-        window.populationChart = new Chart(populationChartCtx, {
+        populationChart = new Chart(populationChartCtx, {
             type: 'line', data: { labels: [], datasets: datasets },
             options: { responsive: true, maintainAspectRatio: false,
                 scales: {
@@ -480,12 +480,12 @@ document.addEventListener('DOMContentLoaded', () => {
             counts: Object.keys(DEFINICOES_ANIMAIS).reduce((acc, tipo) => { acc[tipo] = animais.filter(a => a.tipo === tipo).length; return acc; }, {}),
             idadeMedia: idadeMedia
         });
-        window.populationChart.data.labels = statsHistory.map(h => h.tempo);
-        window.populationChart.data.datasets.forEach(dataset => {
+        populationChart.data.labels = statsHistory.map(h => h.tempo);
+        populationChart.data.datasets.forEach(dataset => {
             if (dataset.label === 'Idade Média') dataset.data = statsHistory.map(h => h.idadeMedia);
-            else { const tipo = Object.keys(DEFINICOES_ANIMAIS).find(k => DEFINICOES_ANIMAIS[k].nome === dataset.label); if(tipo) dataset.data = statsHistory.map(h => h.counts[tipo]); }
+            else { const tipo = Object.keys(DEFINICOES_ANIMAIS).find(k => DEFINICOES_ANIMAIS[k].nome === dataset.label); if(tipo) dataset.data = statsHistory.map(h => h.counts[tipo] || 0); }
         });
-        window.populationChart.update();
+        populationChart.update();
     }
 
     // === EVENT LISTENERS ===
@@ -512,8 +512,8 @@ document.addEventListener('DOMContentLoaded', () => {
             isClickDrag = true;
             objetoSendoArrastado.element.classList.add('dragging');
             const rect = worldViewport.getBoundingClientRect();
-            objetoSendoArrastado.x = e.clientX - rect.left;
-            objetoSendoArrastado.y = e.clientY - rect.top;
+            objetoSendoArrastado.x = e.clientX - rect.left - (objetoSendoArrastado.width / 2);
+            objetoSendoArrastado.y = e.clientY - rect.top - (objetoSendoArrastado.height / 2);
         }
     });
     window.addEventListener('mouseup', () => {
