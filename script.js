@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const logContainer = document.getElementById('log-container');
     const populationChartCtx = document.getElementById('populationChart').getContext('2d');
     const btnModoTerritorio = document.getElementById('btn-modo-territorio');
+    const btnFullscreen = document.getElementById('btn-fullscreen');
     let particleContainer;
 
     // === VARIÁVEIS GLOBAIS DA SIMULAÇÃO ===
@@ -60,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     class Tribe {
         constructor(fundador) {
             this.id = Date.now() + Math.random();
-            this.membros = [fundador];
+            this.membros = [];
             this.abrigo = fundador.abrigo;
             this.cor = `hsl(${Math.random() * 360}, 70%, 50%)`;
             this.territorioRaio = 150;
@@ -73,15 +74,21 @@ document.addEventListener('DOMContentLoaded', () => {
             this.elementoVisual.style.top = `${this.abrigo.y + (this.abrigo.height / 2) - this.territorioRaio}px`;
             this.elementoVisual.style.borderColor = this.cor;
             world.appendChild(this.elementoVisual);
+            this.adicionarMembro(fundador); // Adiciona o fundador
             this.atualizarVisual();
         }
         adicionarMembro(animal) {
-            if (!this.membros.includes(animal)) {
+            if (!this.membros.includes(animal) && animal.tipo === this.membros[0]?.tipo) {
                 this.membros.push(animal);
+                animal.tribo = this;
+                animal.element.style.setProperty('--cor-tribo', this.cor);
+                animal.atualizarVisualTribo();
             }
         }
         removerMembro(animal) {
             this.membros = this.membros.filter(m => m.id !== animal.id);
+            animal.element.style.removeProperty('--cor-tribo');
+            animal.atualizarVisualTribo();
             if (this.membros.length === 0) {
                 this.dissolver();
             }
@@ -236,8 +243,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         decidirAcao() {
             this.alvoDeAtaque = null;
-            
-            // Verificações de segurança para tribos
             if (this.tribo && !tribos.includes(this.tribo)) this.tribo = null;
             if (this.triboInimiga && !tribos.includes(this.triboInimiga)) this.triboInimiga = null;
 
@@ -263,6 +268,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.estado = 'Buscando Comida'; this.alvo = this.encontrarComida(); return;
             }
 
+            // NOVA LÓGICA: Chance de entrar pacificamente em uma tribo
+            if (!this.tribo && this.isMature && this.fome < 40 && this.sede < 40) {
+                const triboProxima = this.encontrarTriboNoLocal();
+                if (triboProxima && triboProxima.membros[0]?.tipo === this.tipo && Math.random() < 0.02) {
+                     triboProxima.adicionarMembro(this);
+                     adicionarLog(`Um ${this.tipo} juntou-se pacificamente a uma tribo.`);
+                     this.estado = 'Vagando';
+                     return;
+                }
+            }
+            
             const podeConstruirAbrigo = ['floresta', 'deserto'].includes(scenarioSelect.value);
             if (podeConstruirAbrigo && !this.abrigo && this.isMature && this.fome < 30 && this.sede < 30) { this.estado = "Construindo abrigo"; this.alvo = { x: this.x, y: this.y, construindo: true }; return; }
             if (this.isMature && this.gender === 'female' && this.reproductionUrge > 70 && this.fome < 40 && this.sede < 40) {
@@ -273,6 +289,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (this.estaNoAbrigo() && this.fome < 80 && this.sede < 80) { this.estado = 'Descansando no abrigo'; this.alvo = null; return; }
             
             this.estado = 'Vagando'; this.alvo = null;
+        }
+        encontrarTriboNoLocal() {
+            for (const tribo of tribos) {
+                 if (tribo.abrigo) {
+                     const dist2 = Math.pow(tribo.abrigo.x - this.x, 2) + Math.pow(tribo.abrigo.y - this.y, 2);
+                     if (dist2 < tribo.territorioRaio * tribo.territorioRaio) {
+                         return tribo;
+                     }
+                 }
+            }
+            return null;
         }
         encontrarInimigoNoTerritorio() {
             if (!this.tribo || !this.tribo.abrigo) return null;
@@ -306,8 +333,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const dx = alvo.x - this.x, dy = alvo.y - this.y, d = Math.hypot(dx, dy);
             if (d < 15) {
                 if (ehAtaque && !alvo.foiRemovido) {
-                    adicionarLog(`Um ${this.tipo} atacou e derrotou um ${alvo.tipo}!`);
-                    alvo.morrer();
+                    this.dispararAnimacaoAtaque(alvo);
+                    adicionarLog(`Um ${this.tipo} de uma tribo atacou e derrotou um ${alvo.tipo} de outra.`);
+                    criarParticulasDeSangue(alvo.x, alvo.y);
+                    alvo.morrer('combate');
                     this.alvoDeAtaque = null;
                     this.estado = 'Vagando';
                 } else {
@@ -317,6 +346,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             let nX = this.x + (dx / d) * this.velocidade, nY = this.y + (dy / d) * this.velocidade;
             if (this.checarColisao(nX, nY)) { this.alvo = null; this.alvoDeAtaque = null; } else { this.x = nX; this.y = nY; }
+        }
+        dispararAnimacaoAtaque(alvo) {
+            this.element.classList.add('atacando');
+            alvo.element.classList.add('atacado');
+            setTimeout(() => {
+                this.element.classList.remove('atacando');
+                alvo.element.classList.remove('atacado');
+            }, 500);
         }
         interagirComAlvo() {
             if (!this.alvo) return;
@@ -363,15 +400,14 @@ document.addEventListener('DOMContentLoaded', () => {
             for(let i=0; i<n; i++) {
                 const filhote = new Animal(this.tipo, this.x + (Math.random()*20-10), this.y + (Math.random()*20-10));
                 if (this.tribo) {
-                    filhote.tribo = this.tribo;
                     this.tribo.adicionarMembro(filhote);
                 }
                 animais.push(filhote);
             }
         }
-        morrer() {
+        morrer(causa) {
             if (this.foiRemovido) return;
-            const causaDaMorte = this.fome >= 100 ? 'fome' : this.sede >= 100 ? 'sede' : this.frio >= 100 ? 'frio' : this.age >= this.maxAge ? 'velhice' : 'combate';
+            const causaDaMorte = causa || (this.fome >= 100 ? 'fome' : this.sede >= 100 ? 'sede' : this.frio >= 100 ? 'frio' : this.age >= this.maxAge ? 'velhice' : 'causas naturais');
             adicionarLog(`Um ${this.tipo} morreu de ${causaDaMorte}.`);
             this.foiRemovido = true;
             
@@ -382,6 +418,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             animais = animais.filter(a => a.id !== this.id);
             this.remover();
+        }
+        atualizarVisualTribo() {
+            const temTriboEModoAtivo = this.tribo && modoTerritorio;
+            this.element.classList.toggle('modo-territorio-animal', temTriboEModoAtivo);
         }
     }
 
@@ -447,12 +487,11 @@ document.addEventListener('DOMContentLoaded', () => {
         weatherTimer = 20 + Math.random() * 20;
         world.classList.add(`world-event`);
         adicionarLog(`Um evento de ${evento} começou!`);
-        criarParticulas(evento, 50);
+        criarParticulasDeClima(evento, 50);
         if (evento === 'chuva') aguas.forEach(a => a.refill());
     }
-    function criarParticulas(tipo, quantidade) {
+    function criarParticulasDeClima(tipo, quantidade) {
         if (!particleContainer) return;
-        particleContainer.innerHTML = '';
         for (let i = 0; i < quantidade; i++) {
             const p = document.createElement('div');
             p.className = `particula ${tipo}`;
@@ -460,6 +499,19 @@ document.addEventListener('DOMContentLoaded', () => {
             p.style.animationDuration = `${1 + Math.random() * 1}s`;
             p.style.animationDelay = `${Math.random() * 2}s`;
             particleContainer.appendChild(p);
+        }
+    }
+    function criarParticulasDeSangue(x, y) {
+        if (!particleContainer) return;
+        for (let i = 0; i < 15; i++) {
+            const p = document.createElement('div');
+            p.className = 'particula sangue';
+            p.style.left = `${x}px`;
+            p.style.top = `${y}px`;
+            p.style.setProperty('--tx', `${(Math.random() - 0.5) * 60}px`);
+            p.style.setProperty('--ty', `${(Math.random() - 0.5) * 60}px`);
+            particleContainer.appendChild(p);
+            setTimeout(() => p.remove(), 500); // Remove a partícula após a animação
         }
     }
     function setGameSpeed(m) {
@@ -496,7 +548,17 @@ document.addEventListener('DOMContentLoaded', () => {
         modoTerritorio = !modoTerritorio;
         btnModoTerritorio.classList.toggle('active', modoTerritorio);
         tribos.forEach(t => t.atualizarVisual());
+        animais.forEach(a => a.atualizarVisualTribo());
         adicionarLog(`Modo de visualização de território ${modoTerritorio ? 'ativado' : 'desativado'}.`);
+    }
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                alert(`Erro ao tentar entrar em tela cheia: ${err.message} (${err.name})`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
     }
     function adicionarLog(mensagem) { const timestamp = tempo.toFixed(1); const logEntry = document.createElement('div'); logEntry.innerHTML = `<span>[${timestamp}s]</span> ${mensagem}`; logContainer.prepend(logEntry); logMessages.unshift(`[${timestamp}s] ${mensagem}`); if (logMessages.length > 50) { logMessages.pop(); logContainer.lastChild.remove(); } }
     function setupChart() { if(populationChart) populationChart.destroy(); const animalTypes = Object.keys(DEFINICOES_ANIMAIS); const datasets = animalTypes.map(tipo => { const color = tipo === 'rato' ? 'rgba(136, 136, 136, 0.8)' : 'rgba(212, 163, 115, 0.8)'; const borderColor = tipo === 'rato' ? 'rgba(136, 136, 136, 1)' : 'rgba(212, 163, 115, 1)'; return { label: DEFINICOES_ANIMAIS[tipo].nome, data: [], borderColor: borderColor, backgroundColor: color, tension: 0.1 }; }); populationChart = new Chart(populationChartCtx, { type: 'line', data: { labels: [], datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'População' } }, x: { title: { display: true, text: 'Tempo (s)' } } }, plugins: { legend: { position: 'top' } } } }); }
@@ -512,6 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnAddCoelho.addEventListener('click', () => adicionarAnimal('coelho'));
     btnColocarPedra.addEventListener('click', toggleModoPedra);
     btnModoTerritorio.addEventListener('click', toggleModoTerritorio);
+    btnFullscreen.addEventListener('click', toggleFullScreen);
     timeControlButtons.forEach(b => { b.addEventListener('click', () => { setGameSpeed(parseFloat(b.dataset.speed)); }); });
     function getEventPosition(e) { return e.touches && e.touches.length > 0 ? e.touches[0] : e; }
     function handleInteractionStart(e) { if (modoDeColocarPedra) { if (e.target === world || e.target.id === 'world-overlay') { const rect = world.getBoundingClientRect(); const pos = getEventPosition(e); obstaculos.push(new Obstaculo(pos.clientX - rect.left, pos.clientY - rect.top)); } return; } if (e.target.entidade instanceof Animal) { e.preventDefault(); objetoInteragido = e.target.entidade; isDragging = false; const pos = getEventPosition(e); startX = pos.clientX; startY = pos.clientY; } }
