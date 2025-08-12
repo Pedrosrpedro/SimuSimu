@@ -111,6 +111,26 @@ button:hover { transform: translateY(-2px); filter: brightness(1.1); } button:ac
 .abrigo { width: 80px; height: 80px; background-image: url('images/abrigo.png'); z-index: 6; }
 .abrigo::after { content: 'x' counter(food); position: absolute; top: -5px; right: -5px; background: #c0392b; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; counter-reset: food var(--food-count, 0); border: 2px solid white; }
 
+.carcaca {
+    width: 60px;
+    height: 60px;
+    background-image: url('images/carcaca.png');
+    z-index: 1;
+    transition: opacity 2s linear;
+}
+
+.territorio-visual {
+    position: absolute;
+    border-radius: 50%;
+    border: 3px dashed;
+    z-index: 0;
+    pointer-events: none;
+    display: none; /* Escondido por padrão */
+    transition: border-color 0.5s;
+    opacity: 0.6;
+}
+
+
 /* --- UI DOS ANIMAIS --- */
 .health-bar-container { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 50px; height: 8px; background-color: rgba(0,0,0,0.3); border-radius: 4px; border: 1px solid rgba(255,255,255,0.5); z-index: 11; }
 .hide-health-bars .health-bar-container { display: none; }
