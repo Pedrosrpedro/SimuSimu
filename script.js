@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let gameInterval, currentSpeedMultiplier = 1;
     let animalInspecionado = null, isClickDrag = false, objetoSendoArrastado = null;
     let populationChart;
+    let statsHistory = [];
 
     // === LÓGICA DE CLASSES ===
 
@@ -177,8 +178,11 @@ document.addEventListener('DOMContentLoaded', () => {
             this.element.className = `entity ${classeCss}`;
             this.x = x ?? Math.random() * (MAP_WIDTH - 50);
             this.y = y ?? Math.random() * (MAP_HEIGHT - 50);
+            
+            // CORREÇÃO 1: Definir a posição do elemento no DOM
             this.element.style.left = `${this.x}px`;
             this.element.style.top = `${this.y}px`;
+            
             this.width = 0; this.height = 0;
             world.appendChild(this.element);
             setTimeout(() => {
@@ -201,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     class Obstaculo extends Entidade { constructor(x, y) { super(x, y, 'pedra'); } }
     class Comida extends Entidade { constructor(tipo, x, y) { super(x, y, DEFINICOES_COMIDAS[tipo].classeCss + ' comida'); this.tipo = tipo; } }
+    // CORREÇÃO 3: Garantir que a classe Agua chame o construtor da Entidade corretamente
     class Agua extends Entidade { constructor() { super(null, null, 'agua'); } refill() { this.element.style.transform = 'scale(1.2)'; setTimeout(() => this.element.style.transform = 'scale(1)', 500); } }
     class Abrigo extends Entidade { constructor(x, y) { super(x, y, 'abrigo'); } }
     class Carcaca extends Entidade {
@@ -273,8 +278,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         this.estado = 'Ocioso'; this.vagarPertoDoAbrigo(); return;
                 }
             } else {
-                if (this.fome > 50) { this.estado = 'Buscando Comida'; this.alvo = this.encontrarComida(); return; }
                 if (this.sede > 60) { this.estado = 'Buscando Água'; this.alvo = this.encontrarMaisProximo(aguas); return; }
+                if (this.fome > 50) { this.estado = 'Buscando Comida'; this.alvo = this.encontrarComida(); return; }
                 if (!this.abrigo && this.isMature && Math.random() < 0.0005) { this.estado = "Fundando Tribo"; this.alvo = { x: this.x, y: this.y }; return; }
                 this.estado = 'Vagando'; this.vagar();
             }
@@ -299,7 +304,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'Comendo no Abrigo': if (this.tribo && this.tribo.recursos.comida > 0) { this.tribo.recursos.comida--; this.fome = Math.max(0, this.fome - 80); } break;
                 case 'Fundando Tribo': this.abrigo = new Abrigo(this.x, this.y); abrigos.push(this.abrigo); tribos.push(new Tribe(this)); break;
                 case 'Acasalando': if (this.alvo instanceof Animal) { this.isGestating = true; this.gestationTimer = 150; this.reproductionUrge = 0; } break;
-                case 'Bebendo Água': if (this.alvo instanceof Agua) { this.sede = Math.max(0, this.sede - 80); this.alvo.refill?.(); } break;
+                
+                // CORREÇÃO 2: Adicionar o caso 'Buscando Água' para que ele execute a mesma lógica de 'Bebendo Água'
+                case 'Buscando Água':
+                case 'Bebendo Água': 
+                    if (this.alvo instanceof Agua) { this.sede = Math.max(0, this.sede - 80); this.alvo.refill?.(); } break;
+                
                 case 'Buscando Comida': if (this.alvo instanceof Comida) { this.fome = Math.max(0, this.fome - 60); this.alvo.remover(); } break;
             }
             this.alvo = null;
