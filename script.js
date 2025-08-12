@@ -242,8 +242,8 @@ document.addEventListener('DOMContentLoaded', () => {
             this.decidirAcao();
             if (this.alvo) this.moverParaAlvo();
 
-            this.x = Math.max(0, Math.min(MAP_WIDTH - this.width, this.x));
-            this.y = Math.max(0, Math.min(MAP_HEIGHT - this.height, this.y));
+            this.x = Math.max(0, Math.min(MAP_WIDTH - (this.width || 40), this.x));
+            this.y = Math.max(0, Math.min(MAP_HEIGHT - (this.height || 40), this.y));
             this.element.style.left = `${this.x}px`;
             this.element.style.top = `${this.y}px`;
             this.atualizarUI();
@@ -334,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
         vagar() { this.alvo = { x: this.x + (Math.random() - 0.5) * 100, y: this.y + (Math.random() - 0.5) * 100 }; }
         vagarPertoDoAbrigo() { if(!this.tribo) return this.vagar(); this.alvo = { x: this.tribo.abrigo.x + (Math.random() - 0.5) * 150, y: this.tribo.abrigo.y + (Math.random() - 0.5) * 150 }; }
         vagarPelaBorda() { if(!this.tribo) return this.vagar(); const angulo = Math.random() * 2 * Math.PI; this.alvo = { x: this.tribo.abrigo.x + Math.cos(angulo) * this.tribo.territorioRaio, y: this.tribo.abrigo.y + Math.sin(angulo) * this.tribo.territorioRaio }; }
-        encontrarComida() { return this.encontrarMaisProximo(comidas.filter(c => this.oQueCome.includes(c.tipo))); }
+        encontrarComida() { return this.encontrarMaisProximo(comidas.filter(c => !c.foiRemovido && this.oQueCome.includes(c.tipo))); }
         encontrarInimigo() { return this.encontrarMaisProximo(animais.filter(a => a.tribo && this.tribo && a.tribo.id !== this.tribo.id && this.tribo.diplomacia[a.tribo.id] === 'GUERRA')); }
         encontrarMaisProximo(lista) { return lista.reduce((maisProximo, atual) => { if (!atual || atual.foiRemovido) return maisProximo; const d = Math.hypot(this.x - atual.x, this.y - atual.y); if (!maisProximo || d < maisProximo.dist) return { alvo: atual, dist: d }; return maisProximo; }, null)?.alvo; }
 
@@ -362,9 +362,12 @@ document.addEventListener('DOMContentLoaded', () => {
         animais = []; comidas = []; aguas = []; obstaculos = []; abrigos = []; tribos = []; carcacas = [];
         tempo = 0; statsHistory = []; logContainer.innerHTML = '';
         
-        for(let i=0; i<parseInt(numAguaInput.value); i++) aguas.push(new Agua());
-        const tiposSel = Array.from(animalSelectionDiv.querySelectorAll('input')).filter(i => parseInt(i.value) > 0).map(i => i.dataset.tipo);
-        if (tiposSel.length > 0) { for (let i = 0; i < parseInt(numComidaInput.value); i++) { const tC = DEFINICOES_ANIMAIS[tiposSel[Math.floor(Math.random() * tiposSel.length)]].come[0]; comidas.push(new Comida(tC)); } }
+        for(let i=0; i<parseInt(numAguaInput.value); i++) {
+            aguas.push(new Agua());
+        }
+        for(let i=0; i<parseInt(numComidaInput.value); i++) {
+            comidas.push(new Comida('grama'));
+        }
         animalSelectionDiv.querySelectorAll('input').forEach(i => { for(let j=0; j<parseInt(i.value); j++) { if (i.value > 0) animais.push(new Animal(i.dataset.tipo)); } });
         
         setupChart(); setGameSpeed(1); Telas.mostrar('game'); adicionarLog("A simulação começou!", "info");
@@ -376,6 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         [...tribos].forEach(t => t.atualizarTribo());
         [...animais].forEach(a => a.atualizar());
+        [...carcacas].forEach(c => c.atualizar());
         
         worldViewport.classList.toggle('hide-health-bars', animais.length > HEALTH_BAR_THRESHOLD);
         populacaoTotalSpan.textContent = animais.length;
