@@ -1,19 +1,17 @@
 /* --- CONFIGURAÇÃO GERAL E VARIÁVEIS DE COR --- */
 :root {
     --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    /* Cores Tema Escuro */
     --bg-dark: #1a202c; --panel-bg-dark: #2d3748; --text-dark: #e2e8f0; --text-muted-dark: #a0aec0;
-    --border-dark: #4a5568; --accent-dark: #4fd1c5; --accent-hover-dark: #38b2ac;
-    /* Cores Tema Claro */
+    --border-dark: #4a5568; --accent-dark: #4fd1c5;
     --bg-light: #f0f2f5; --panel-bg-light: #ffffff; --text-light: #1a202c; --text-muted-light: #718096;
-    --border-light: #e2e8f0; --accent-light: #3182ce; --accent-hover-light: #2b6cb0;
+    --border-light: #e2e8f0; --accent-light: #3182ce;
 }
 body { font-family: var(--font-sans); display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; margin: 0; transition: background-color 0.3s ease, color 0.3s ease; -webkit-user-select: none; user-select: none; box-sizing: border-box; }
 .theme-dark { background-color: var(--bg-dark); color: var(--text-dark); }
 .theme-light { background-color: var(--bg-light); color: var(--text-light); }
 
 /* --- PAINÉIS --- */
-.panel { padding: 30px 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); transition: background-color 0.3s ease, border-color 0.3s ease; border: 1px solid transparent; }
+.panel { padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); transition: background-color 0.3s ease, border-color 0.3s ease; border: 1px solid transparent; }
 .theme-dark .panel { background-color: var(--panel-bg-dark); border-color: var(--border-dark); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
 .theme-light .panel { background-color: var(--panel-bg-light); border-color: var(--border-light); }
 .hidden { display: none !important; }
@@ -25,7 +23,7 @@ body { font-family: var(--font-sans); display: flex; justify-content: center; al
 .theme-dark .game-subtitle, .theme-dark h1, .theme-dark h2, .theme-dark h3 { color: var(--text-muted-dark); }
 .theme-light .game-subtitle, .theme-light h1, .theme-light h2, .theme-light h3 { color: var(--text-muted-light); }
 h1 { font-size: 24px; margin-bottom: 20px; } h2 { font-size: 20px; margin-bottom: 15px; }
-.panel-subtitle { font-size: 14px; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid; margin-top: 25px; margin-bottom: 15px; padding-bottom: 8px; text-align: left; }
+.panel-subtitle { font-size: 14px; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid; margin-top: 20px; margin-bottom: 15px; padding-bottom: 8px; text-align: left; }
 .theme-dark .panel-subtitle { border-color: var(--border-dark); } .theme-light .panel-subtitle { border-color: var(--border-light); }
 
 /* --- BOTÕES --- */
@@ -51,27 +49,15 @@ button:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow:
 .animal-input-group { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; } .animal-input-group label { flex-grow: 1; }
 
 /* --- TELA DO JOGO (LAYOUT FLEX) --- */
-#game-container {
-    display: flex; gap: 20px; width: 100%; max-width: 1300px;
-    height: 90vh; max-height: 700px;
-    padding: 20px; box-sizing: border-box; align-items: stretch;
-    justify-content: center; flex-wrap: wrap;
-}
-#world-viewport {
-    width: 800px; height: 100%; border: 2px solid; position: relative;
-    overflow: hidden; background-color: #fff; cursor: default;
-    border-radius: 8px; touch-action: none; flex-shrink: 0;
-}
+#game-container { display: flex; gap: 20px; width: 100%; max-width: 1250px; height: 90vh; max-height: 700px; padding: 20px; box-sizing: border-box; align-items: stretch; justify-content: center; flex-wrap: wrap; }
+#world-viewport { width: 800px; height: 100%; border: 2px solid; position: relative; overflow: hidden; background-color: #fff; cursor: default; border-radius: 8px; touch-action: none; flex-shrink: 0; }
 .theme-dark #world-viewport { border-color: var(--border-dark); }
 .theme-light #world-viewport { border-color: var(--text-light); }
-
-#world { position: absolute; top: 0; left: 0; background-size: cover; }
+/* CORREÇÃO: Garantir que o mundo preencha o viewport */
+#world { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; }
 
 /* --- PAINEL DE INFO, ABAS, LOG E GRÁFICOS --- */
-#info-panel {
-    min-width: 350px; height: 100%; position: relative; padding: 0;
-    display: flex; flex-direction: column; flex-grow: 1;
-}
+#info-panel { min-width: 350px; height: 100%; position: relative; padding: 0; display: flex; flex-direction: column; flex-grow: 1; }
 #main-info-panel, #inspection-panel { display: flex; flex-direction: column; height: 100%; }
 #main-info-panel.hidden, #inspection-panel.hidden { display: none; }
 .tabs { display: flex; border-bottom: 1px solid; flex-shrink: 0;} .theme-dark .tabs { border-color: var(--border-dark); } .theme-light .tabs { border-color: var(--border-light); }
@@ -80,33 +66,28 @@ button:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow:
 .theme-dark .tab-button { color: var(--text-muted-dark); } .theme-light .tab-button { color: var(--text-muted-light); }
 .theme-dark .tab-button.active { color: var(--accent-dark); border-bottom-color: var(--accent-dark); background-color: transparent;}
 .theme-light .tab-button.active { color: var(--accent-light); border-bottom-color: var(--accent-light); background-color: transparent;}
-
 .tab-content { display: none; padding: 20px; overflow-y: auto; flex-grow: 1; }
 .tab-content.active { display: flex; flex-direction: column; }
 .stats-grid { display: grid; grid-template-columns: 1fr auto; gap: 8px 15px; margin-bottom: 15px; }
 .stat-item span:first-child { font-weight: 500; } .stat-item span:last-child { font-weight: 700; text-align: right; }
 .theme-dark .stat-item span:last-child { color: var(--accent-dark); } .theme-light .stat-item span:last-child { color: var(--accent-light); }
 #animal-counts { font-size: 14px; line-height: 1.6; }
-.chart-container { position: relative; height: 250px; width: 100%; }
+.chart-container { position: relative; height: 250px; width: 100%; flex-shrink: 0; }
 .btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
-.btn-time { flex-grow: 1; padding: 10px; font-size: 14px; margin: 0; flex-basis: 25%; display: flex; justify-content: center; align-items: center; }
+.btn-time { flex: 1; padding: 10px; font-size: 14px; margin: 0; display: flex; justify-content: center; align-items: center; }
 .btn-time i { font-size: 18px; }
 .theme-dark .btn-time { background-color: var(--border-dark); color: var(--text-dark); } .theme-light .btn-time { background-color: var(--border-light); color: var(--text-light); }
 .theme-dark .btn-time.active { background-color: var(--accent-dark); color: var(--bg-dark); } .theme-light .btn-time.active { background-color: var(--accent-light); color: #fff; }
+.interaction-group .btn-interaction { flex: 1 1 100px; margin: 0; padding: 8px; font-size: 14px;}
 
-
-/* --- LOG DE EVENTOS COM ÍCONES --- */
+/* --- LOG DE EVENTOS --- */
 #log-container { height: 100%; font-size: 13px; line-height: 1.5; }
 #log-container div { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px dashed; }
 #log-container div i { width: 20px; text-align: center; font-size: 14px; }
 #log-container span { font-weight: 600; margin-right: 8px; }
 .theme-dark #log-container div { border-bottom-color: var(--border-dark); } .theme-light #log-container div { border-bottom-color: var(--border-light); }
-.log-entry-nascimento i { color: #2ecc71; }
-.log-entry-morte i { color: #e74c3c; }
-.log-entry-guerra i { color: #e67e22; }
-.log-entry-clima i { color: #3498db; }
-.log-entry-tribo i { color: #9b59b6; }
-.log-entry-info i { color: #bdc3c7; }
+.log-entry-nascimento i { color: #2ecc71; } .log-entry-morte i { color: #e74c3c; } .log-entry-guerra i { color: #e67e22; }
+.log-entry-clima i { color: #3498db; } .log-entry-tribo i { color: #9b59b6; } .log-entry-info i { color: #bdc3c7; }
 
 /* --- PAINEL DE INSPEÇÃO --- */
 #inspection-panel { padding: 20px; }
@@ -130,57 +111,26 @@ button:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow:
 #inspect-sede { background: linear-gradient(90deg, #c0392b, #f39c12, #3498db); }
 #inspect-frio { background: linear-gradient(90deg, #3498db, #f1c40f, #e74c3c); }
 
-
 /* --- EFEITOS DE MUNDO E ENTIDADES --- */
 #world-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; transition: background-color 2s ease-in-out; z-index: 50; border-radius: 8px;}
-.world-night #world-overlay { background-color: rgba(10, 20, 50, 0.4); }
-.world-event #world-overlay { background-color: rgba(70, 130, 180, 0.2); }
-#particle-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 51; }
-.particula { position: absolute; }
-.chuva, .neve { top: -20px; animation: queda linear infinite; }
-.chuva { width: 2px; height: 15px; background-color: #3498db; opacity: 0.7; }
-.neve { width: 8px; height: 8px; background-color: white; border-radius: 50%; opacity: 0.9; box-shadow: 0 0 5px white; }
-.sangue { width: 5px; height: 5px; background-color: #c0392b; border-radius: 50%; animation: rajada-sangue 0.5s ease-out forwards; }
-@keyframes queda { to { transform: translateY(720px); } }
-@keyframes rajada-sangue { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0); } }
-
-.world-aquario { background-image: url('images/aquario_fundo.jpg'); }
-.world-floresta { background-image: url('images/floresta_fundo.jpg'); }
-.world-deserto { background-image: url('images/deserto_fundo.jpg'); }
-
 .entity { position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center; transition: opacity 0.5s, transform 0.5s, visibility 0.3s; }
 .animal { z-index: 10; cursor: grab; position: relative; }
-.animal.escondido { visibility: hidden; opacity: 0; }
 .animal.dragging { z-index: 100; cursor: grabbing; transform: scale(1.1); filter: drop-shadow(0 0 10px var(--accent-dark)); }
-.rato { width: 60px; height: 60px; background-image: url('images/rato.png'); }
-.coelho { width: 65px; height: 65px; background-image: url('images/coelho.png'); }
-.animal.filhote { transform: scale(0.5); }
-.racao { width: 25px; height: 25px; background-image: url('images/racao.png'); z-index: 5; }
-.grama { width: 30px; height: 30px; background-image: url('images/grama.png'); z-index: 5; }
+.rato { width: 40px; height: 40px; background-image: url('images/rato.png'); }
+.coelho { width: 45px; height: 45px; background-image: url('images/coelho.png'); }
+.animal.filhote { transform: scale(0.6); }
+.racao { width: 20px; height: 20px; background-image: url('images/racao.png'); z-index: 5; }
+.grama { width: 25px; height: 25px; background-image: url('images/grama.png'); z-index: 5; }
 .agua { width: 60px; height: 60px; background-image: url('images/bebedouro.png'); z-index: 5; }
 .pedra { width: 70px; height: 70px; background-image: url('images/pedra.png'); z-index: 20; }
 .abrigo { width: 80px; height: 80px; background-image: url('images/abrigo.png'); z-index: 6; }
-.carcaca { width: 60px; height: 60px; background-image: url('images/carcaca.png'); z-index: 1; transition: opacity 2s linear; }
-.territorio-visual { position: absolute; border-radius: 50%; border: 3px dashed; z-index: 0; pointer-events: none; transition: border-color 0.5s, width 0.5s, height 0.5s, left 0.5s, top 0.5s; opacity: 0.6; }
-
-/* -- ANIMAÇÕES E VISUAL DE ANIMAIS -- */
-.animal.atacando { animation: animacao-ataque 0.5s ease-in-out; }
-.animal.atacado { animation: animacao-dano 0.5s ease-in-out; }
-@keyframes animacao-ataque { 50% { transform: scale(1.15); } }
-@keyframes animacao-dano { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
-
-/* Coloração da Tribo */
-.animal::before {
-    content: ''; position: absolute; top: 0; left: 0;
-    width: 100%; height: 100%; border-radius: 50%;
-    background-color: var(--cor-tribo, transparent);
-    mix-blend-mode: color;
-    opacity: 0; transition: opacity 0.5s; pointer-events: none;
-}
-.animal.modo-territorio-animal::before { opacity: 0.7; }
-
-/* --- UI DOS ANIMAIS --- */
-.health-bar-container { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 50px; height: 8px; background-color: rgba(0,0,0,0.3); border-radius: 4px; border: 1px solid rgba(255,255,255,0.5); z-index: 11; }
+/* CORREÇÃO: Contador de comida do abrigo */
+.abrigo::after { content: 'x' counter(food); position: absolute; top: -5px; right: -5px; background: #c0392b; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; counter-reset: food var(--food-count, 0); border: 2px solid white; display: var(--food-display, none); }
+.carcaca { width: 40px; height: 40px; background-image: url('images/carcaca.png'); z-index: 1; transition: opacity 2s linear; }
+.territorio-visual { position: absolute; border-radius: 50%; border: 3px dashed; z-index: 0; pointer-events: none; transition: all 0.5s; opacity: 0.6; display: none; }
+.territorio-visual.active { display: block; }
+.animal.modo-territorio-animal::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background-color: var(--cor-tribo, transparent); mix-blend-mode: color; opacity: 0.7; transition: opacity 0.5s; pointer-events: none; }
+.health-bar-container { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 40px; height: 6px; background-color: rgba(0,0,0,0.3); border-radius: 3px; border: 1px solid rgba(255,255,255,0.5); z-index: 11; }
 .hide-health-bars .health-bar-container { display: none; }
-.health-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s, background-color 0.5s; }
+.health-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s, background-color 0.5s; }
 .health-green { background-color: #2ecc71; } .health-yellow { background-color: #f1c40f; } .health-red { background-color: #e74c3c; }
