@@ -177,6 +177,8 @@ document.addEventListener('DOMContentLoaded', () => {
             this.element.className = `entity ${classeCss}`;
             this.x = x ?? Math.random() * (MAP_WIDTH - 50);
             this.y = y ?? Math.random() * (MAP_HEIGHT - 50);
+            this.element.style.left = `${this.x}px`;
+            this.element.style.top = `${this.y}px`;
             this.width = 0; this.height = 0;
             world.appendChild(this.element);
             setTimeout(() => {
