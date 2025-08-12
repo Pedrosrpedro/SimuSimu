@@ -60,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
     class Tribe {
         constructor(fundador) {
             this.id = Date.now() + Math.random();
-            this.fundador = fundador;
             this.membros = [fundador];
             this.abrigo = fundador.abrigo;
             this.cor = `hsl(${Math.random() * 360}, 70%, 50%)`;
@@ -76,14 +75,34 @@ document.addEventListener('DOMContentLoaded', () => {
             world.appendChild(this.elementoVisual);
             this.atualizarVisual();
         }
-        adicionarMembro(animal) { this.membros.push(animal); }
+        adicionarMembro(animal) {
+            if (!this.membros.includes(animal)) {
+                this.membros.push(animal);
+            }
+        }
         removerMembro(animal) {
             this.membros = this.membros.filter(m => m.id !== animal.id);
-            if (this.membros.length === 0) this.dissolver();
+            if (this.membros.length === 0) {
+                this.dissolver();
+            }
         }
-        atualizarVisual() { this.elementoVisual.style.display = modoTerritorio ? 'block' : 'none'; }
+        atualizarVisual() {
+            this.elementoVisual.style.display = modoTerritorio ? 'block' : 'none';
+        }
         dissolver() {
-            if (this.elementoVisual.parentElement) world.removeChild(this.elementoVisual);
+            this.membros.forEach(m => {
+                if (m) {
+                    m.tribo = null;
+                    m.estado = 'Vagando';
+                }
+            });
+            if (this.abrigo) {
+                this.abrigo.remover();
+                abrigos = abrigos.filter(ab => ab.id !== this.abrigo.id);
+            }
+            if (this.elementoVisual.parentElement) {
+                world.removeChild(this.elementoVisual);
+            }
             tribos = tribos.filter(t => t.id !== this.id);
         }
     }
@@ -101,8 +120,12 @@ document.addEventListener('DOMContentLoaded', () => {
             this.height = this.element.offsetHeight;
             this.element.entidade = this;
             this.id = Date.now() + Math.random();
+            this.foiRemovido = false;
         }
-        remover() { if (this.element.parentElement) world.removeChild(this.element); this.foiRemovido = true; }
+        remover() {
+            if (this.element.parentElement) world.removeChild(this.element);
+            this.foiRemovido = true;
+        }
         getBounds() { return { left: this.x, right: this.x + this.width, top: this.y, bottom: this.y + this.height }; }
     }
 
@@ -113,28 +136,27 @@ document.addEventListener('DOMContentLoaded', () => {
         refill() { this.element.style.transition = 'transform 0.2s'; this.element.style.transform = 'scale(1.2)'; setTimeout(() => this.element.style.transform = 'scale(1)', 500); }
     }
     class Abrigo extends Entidade {
-        constructor(x, y, dono) {
+        constructor(x, y) {
             super(x, y, 'abrigo');
-            this.dono = dono;
             this.estoqueComida = [];
             this.capacidadeEstoque = 5;
             this.element.style.setProperty('--food-count', this.estoqueComida.length);
-            adicionarLog(`Um abrigo foi construído por um ${dono.tipo}.`);
+            adicionarLog(`Um abrigo foi construído.`);
         }
         adicionarComida(comida) {
             if (this.estoqueComida.length < this.capacidadeEstoque) {
                 this.estoqueComida.push(comida.tipo);
                 comida.remover();
-                comidas = comidas.filter(c => c !== comida);
+                comidas = comidas.filter(c => c.id !== comida.id);
                 this.element.style.setProperty('--food-count', this.estoqueComida.length);
                 return true;
             } return false;
         }
         pegarComida() {
             if (this.estoqueComida.length > 0) {
-                const tipoComida = this.estoqueComida.pop();
+                this.estoqueComida.pop();
                 this.element.style.setProperty('--food-count', this.estoqueComida.length);
-                return tipoComida;
+                return true;
             } return null;
         }
     }
@@ -143,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         constructor(x, y) {
             super(x, y, 'carcaca');
             this.nutrientes = 100;
-            this.timerDecomposicao = 400; // Tempo em "ticks" para desaparecer
+            this.timerDecomposicao = 400;
             this.element.style.zIndex = 1;
         }
         atualizar() {
@@ -171,11 +193,11 @@ document.addEventListener('DOMContentLoaded', () => {
             this.healthBarFill = document.createElement('div'); this.healthBarFill.className = 'health-bar-fill';
             this.healthBarContainer.appendChild(this.healthBarFill); this.element.appendChild(this.healthBarContainer);
             this.statusBubble = document.createElement('div'); this.statusBubble.className = 'status-bubble'; this.element.appendChild(this.statusBubble);
-            adicionarLog(`Um ${this.tipo} ${this.gender} nasceu.`);
         }
         toggleStatusBubble() { document.querySelectorAll('.status-bubble.visible').forEach(b => { if (b !== this.statusBubble) b.classList.remove('visible'); }); this.statusBubble.classList.toggle('visible'); }
         atualizar() {
             if (this.foiRemovido || (objetoInteragido === this && isDragging)) return;
+
             this.age += 0.05; this.fome += 0.2; this.sede += (scenarioSelect.value === 'deserto' ? 0.3 : 0.25);
             if (this.isMature) this.reproductionUrge += 0.3;
             if (currentEvent === 'nevasca' && !this.estaNoAbrigo()) this.frio += 0.4; else this.frio = Math.max(0, this.frio - 0.2);
@@ -183,16 +205,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!this.isMature && this.age > 20) { this.isMature = true; this.element.classList.remove('filhote'); }
             
             this.decidirAcao();
-            if (this.alvoDeAtaque) this.moverParaAlvo(this.alvoDeAtaque, true);
-            else if (this.alvo) this.moverParaAlvo(this.alvo, false);
-            else this.vagar();
+            const alvoMovimento = this.alvoDeAtaque || this.alvo;
+            if (alvoMovimento) {
+                this.moverParaAlvo(alvoMovimento, !!this.alvoDeAtaque);
+            } else {
+                this.vagar();
+            }
 
             this.element.style.left = `${this.x}px`;
             this.element.style.top = `${this.y}px`;
             this.element.style.opacity = Math.max(0.3, (100 - Math.max(this.fome, this.sede, this.frio)) / 100);
             this.atualizarUI();
         }
-        estaNoAbrigo() { if (!this.abrigo) return false; const d = Math.hypot(this.x - this.abrigo.x, this.y - this.abrigo.y); return d < 15; }
+        estaNoAbrigo() { if (!this.abrigo) return false; return Math.hypot(this.x - this.abrigo.x, this.y - this.abrigo.y) < 15; }
         atualizarUI() {
             const bemEstar = 100 - Math.max(this.fome, this.sede, this.frio);
             this.healthBarFill.style.width = `${bemEstar}%`;
@@ -202,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.element.classList.toggle('escondido', deveSeEsconder);
         }
         getStatusText() {
-            let s = this.estado; let n = [];
+            let s = this.estado, n = [];
             if(this.fome > 70) n.push('morrendo de fome'); else if (this.fome > 40) n.push('com fome');
             if(this.sede > 70) n.push('morrendo de sede'); else if (this.sede > 40) n.push('com sede');
             if(currentEvent === 'chuva' && !this.estaNoAbrigo()) n.push('molhado');
@@ -210,53 +235,51 @@ document.addEventListener('DOMContentLoaded', () => {
             return `${s}${n.length > 0 ? ': ' + n.join(' e ') : ''}`;
         }
         decidirAcao() {
-            // LÓGICA DE GUERRA E DEFESA
-            if (this.tribo) {
+            this.alvoDeAtaque = null;
+            
+            // Verificações de segurança para tribos
+            if (this.tribo && !tribos.includes(this.tribo)) this.tribo = null;
+            if (this.triboInimiga && !tribos.includes(this.triboInimiga)) this.triboInimiga = null;
+
+            if (this.tribo && this.estado !== 'Guerreando') {
                 const inimigoNoTerritorio = this.encontrarInimigoNoTerritorio();
-                if (inimigoNoTerritorio && this.estado !== 'Guerreando') {
+                if (inimigoNoTerritorio && inimigoNoTerritorio.tribo) {
                     this.estado = 'Guerreando';
                     this.triboInimiga = inimigoNoTerritorio.tribo;
-                    adicionarLog(`A tribo de um ${this.tipo} (${this.tribo.cor}) declarou guerra!`);
                 }
             }
             if (this.estado === 'Guerreando') {
                 if (this.triboInimiga && this.triboInimiga.membros.length > 0) {
                     this.alvoDeAtaque = this.encontrarMaisProximo(this.triboInimiga.membros);
                     if (this.alvoDeAtaque) return;
-                } else {
-                    this.estado = 'Vagando'; this.triboInimiga = null;
                 }
+                this.estado = 'Vagando'; this.triboInimiga = null;
             }
 
-            // LÓGICA DE SOBREVIVÊNCIA (PRIORIDADE MÁXIMA)
-            if (currentEvent === 'nevasca' && this.frio > 30 && this.abrigo && !this.estaNoAbrigo()) { this.alvo = this.abrigo; this.estado = "Buscando abrigo"; return; }
-            if (this.sede > 60) { this.alvo = this.encontrarMaisProximo(aguas); this.estado = 'Buscando Água'; return; }
+            if (currentEvent === 'nevasca' && this.frio > 30 && this.abrigo && !this.estaNoAbrigo()) { this.estado = "Buscando abrigo"; this.alvo = this.abrigo; return; }
+            if (this.sede > 60) { this.estado = 'Buscando Água'; this.alvo = this.encontrarMaisProximo(aguas); return; }
             if (this.fome > 50) {
-                if (this.abrigo && this.abrigo.estoqueComida.length > 0) { this.alvo = this.abrigo; this.estado = 'Pegando comida no abrigo'; return; }
-                this.alvo = this.encontrarComida(); this.estado = 'Buscando Comida'; return;
+                if (this.abrigo && this.abrigo.estoqueComida.length > 0) { this.estado = 'Pegando comida no abrigo'; this.alvo = this.abrigo; return; }
+                this.estado = 'Buscando Comida'; this.alvo = this.encontrarComida(); return;
             }
 
-            // LÓGICA SOCIAL E DE MANUTENÇÃO
             const podeConstruirAbrigo = ['floresta', 'deserto'].includes(scenarioSelect.value);
             if (podeConstruirAbrigo && !this.abrigo && this.isMature && this.fome < 30 && this.sede < 30) { this.estado = "Construindo abrigo"; this.alvo = { x: this.x, y: this.y, construindo: true }; return; }
             if (this.isMature && this.gender === 'female' && this.reproductionUrge > 70 && this.fome < 40 && this.sede < 40) {
                 const p = this.encontrarMaisProximo(animais.filter(a => a.tipo === this.tipo && a.isMature && a.gender === 'male' && !a.isGestating));
-                if (p) { this.alvo = p; this.estado = 'Procurando parceiro'; return; }
+                if (p) { this.estado = 'Procurando parceiro'; this.alvo = p; return; }
             }
-            if (this.abrigo && this.abrigo.estoqueComida.length < this.abrigo.capacidadeEstoque && this.fome < 40) {
-                this.alvo = this.encontrarComida(); if (this.alvo) this.estado = 'Estocando comida'; return;
-            }
+            if (this.abrigo && this.abrigo.estoqueComida.length < this.abrigo.capacidadeEstoque && this.fome < 40) { this.estado = 'Estocando comida'; this.alvo = this.encontrarComida(); return; }
             if (this.estaNoAbrigo() && this.fome < 80 && this.sede < 80) { this.estado = 'Descansando no abrigo'; this.alvo = null; return; }
             
-            this.estado = 'Vagando'; this.alvo = null; this.alvoDeAtaque = null;
+            this.estado = 'Vagando'; this.alvo = null;
         }
         encontrarInimigoNoTerritorio() {
-            if (!this.tribo) return null;
+            if (!this.tribo || !this.tribo.abrigo) return null;
             const raio2 = this.tribo.territorioRaio * this.tribo.territorioRaio;
             for (const animal of animais) {
                 if (animal.tipo === this.tipo && animal.tribo && animal.tribo.id !== this.tribo.id) {
-                    const dist2 = Math.pow(this.tribo.abrigo.x - animal.x, 2) + Math.pow(this.tribo.abrigo.y - animal.y, 2);
-                    if (dist2 < raio2) {
+                    if (Math.pow(this.tribo.abrigo.x - animal.x, 2) + Math.pow(this.tribo.abrigo.y - animal.y, 2) < raio2) {
                         return animal;
                     }
                 }
@@ -264,18 +287,26 @@ document.addEventListener('DOMContentLoaded', () => {
             return null;
         }
         encontrarComida() {
-            const fontesDeComida = comidas.filter(c => this.oQueCome.includes(c.tipo));
-            if (this.tipo === 'rato') { // Ratos são necrófagos
-                fontesDeComida.push(...carcacas.filter(c => c.nutrientes > 0));
+            const fontesDeComida = comidas.filter(c => !c.foiRemovido && this.oQueCome.includes(c.tipo));
+            if (this.tipo === 'rato') {
+                fontesDeComida.push(...carcacas.filter(c => !c.foiRemovido && c.nutrientes > 0));
             }
             return this.encontrarMaisProximo(fontesDeComida);
+        }
+        encontrarMaisProximo(lista) {
+            return lista.reduce((maisProximo, atual) => {
+                if (!atual || atual === this || atual.foiRemovido) return maisProximo;
+                const d = Math.hypot(this.x - atual.x, this.y - atual.y);
+                if (!maisProximo || d < maisProximo.dist) return { alvo: atual, dist: d };
+                return maisProximo;
+            }, null)?.alvo;
         }
         moverParaAlvo(alvo, ehAtaque) {
             if (!alvo || alvo.foiRemovido) { this.alvo = null; this.alvoDeAtaque = null; return; }
             const dx = alvo.x - this.x, dy = alvo.y - this.y, d = Math.hypot(dx, dy);
             if (d < 15) {
-                if (ehAtaque) {
-                    adicionarLog(`Um ${this.tipo} atacou um ${alvo.tipo}!`);
+                if (ehAtaque && !alvo.foiRemovido) {
+                    adicionarLog(`Um ${this.tipo} atacou e derrotou um ${alvo.tipo}!`);
                     alvo.morrer();
                     this.alvoDeAtaque = null;
                     this.estado = 'Vagando';
@@ -285,43 +316,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             let nX = this.x + (dx / d) * this.velocidade, nY = this.y + (dy / d) * this.velocidade;
-            if (this.checarColisao(nX, nY)) { nX = this.x + (Math.random() - 0.5) * 5; nY = this.y + (Math.random() - 0.5) * 5; if (this.checarColisao(nX, nY)) { this.alvo = null; this.alvoDeAtaque = null; return; } }
-            this.x = nX; this.y = nY;
+            if (this.checarColisao(nX, nY)) { this.alvo = null; this.alvoDeAtaque = null; } else { this.x = nX; this.y = nY; }
         }
         interagirComAlvo() {
+            if (!this.alvo) return;
             switch(this.estado) {
                 case 'Buscando Comida': 
                     if (this.alvo instanceof Carcaca) {
                         this.fome = Math.max(0, this.fome - this.alvo.nutrientes);
-                        this.alvo.nutrientes = 0; // Esvazia a carcaça
-                    } else {
-                        this.fome = Math.max(0, this.fome - 60); this.alvo.remover(); comidas = comidas.filter(c => c !== this.alvo);
+                        this.alvo.nutrientes = 0;
+                    } else if (this.alvo instanceof Comida) {
+                        this.fome = Math.max(0, this.fome - 60); this.alvo.remover(); comidas = comidas.filter(c => c.id !== this.alvo.id);
                     }
                     break;
-                case 'Buscando Água': this.sede = Math.max(0, this.sede - 70); this.alvo.refill?.(); break;
-                case 'Procurando parceiro': if(this.alvo?.isMature) { this.isGestating = true; this.gestationTimer = 150; this.reproductionUrge = 0; } break;
-                case 'Construindo abrigo': 
-                    this.abrigo = new Abrigo(this.x, this.y, this);
+                case 'Buscando Água': if (this.alvo instanceof Agua) { this.sede = Math.max(0, this.sede - 70); this.alvo.refill?.(); } break;
+                case 'Procurando parceiro': if (this.alvo instanceof Animal && this.alvo.isMature) { this.isGestating = true; this.gestationTimer = 150; this.reproductionUrge = 0; } break;
+                case 'Construindo abrigo':
+                    this.abrigo = new Abrigo(this.x, this.y);
                     abrigos.push(this.abrigo);
                     this.tribo = new Tribe(this);
                     tribos.push(this.tribo);
                     break;
-                case 'Estocando comida': if (this.abrigo && this.alvo) { this.abrigo.adicionarComida(this.alvo); } break;
+                case 'Estocando comida': if (this.abrigo && this.alvo instanceof Comida) { this.abrigo.adicionarComida(this.alvo); } break;
                 case 'Pegando comida no abrigo': if (this.abrigo?.pegarComida()) { this.fome = Math.max(0, this.fome - 60); } break;
             }
             this.alvo = null;
         }
         checarColisao(x, y) { for (const o of [...obstaculos, ...abrigos.filter(a => a !== this.abrigo)]) { const b = o.getBounds(); if (x < b.right && x + this.width > b.left && y < b.bottom && y + this.height > b.top) return true; } return false; }
-        vagar() { 
-            const alvoX = this.tribo ? this.tribo.abrigo.x + (Math.random() - 0.5) * this.tribo.territorioRaio * 2 : Math.random() * WORLD_WIDTH;
-            const alvoY = this.tribo ? this.tribo.abrigo.y + (Math.random() - 0.5) * this.tribo.territorioRaio * 2 : Math.random() * WORLD_HEIGHT;
+        vagar() {
+            let alvoX, alvoY;
+            if (this.tribo && this.tribo.abrigo) {
+                alvoX = this.tribo.abrigo.x + (Math.random() - 0.5) * this.tribo.territorioRaio * 2;
+                alvoY = this.tribo.abrigo.y + (Math.random() - 0.5) * this.tribo.territorioRaio * 2;
+            } else {
+                alvoX = Math.random() * WORLD_WIDTH;
+                alvoY = Math.random() * WORLD_HEIGHT;
+            }
             if (!this.vagarAlvo || Math.random() < 0.05) { this.vagarAlvo = { x: alvoX, y: alvoY }; }
             const dx = this.vagarAlvo.x - this.x, dy = this.vagarAlvo.y - this.y, d = Math.hypot(dx, dy);
-            if (d < 20) this.vagarAlvo = null; else { let nX = this.x + (dx / d) * (this.velocidade / 2), nY = this.y + (dy / d) * (this.velocidade / 2); if (!this.checarColisao(nX, nY)) { this.x = nX; this.y = nY; } else { this.vagarAlvo = null; } }
+            if (d < 20) { this.vagarAlvo = null; }
+            else { let nX = this.x + (dx / d) * (this.velocidade / 2), nY = this.y + (dy / d) * (this.velocidade / 2); if (!this.checarColisao(nX, nY)) { this.x = nX; this.y = nY; } else { this.vagarAlvo = null; } }
         }
         darALuz() {
             this.isGestating = false;
-            const n = Math.floor(Math.random() * 3) + 1;
+            const n = Math.floor(Math.random() * 2) + 1;
             for(let i=0; i<n; i++) {
                 const filhote = new Animal(this.tipo, this.x + (Math.random()*20-10), this.y + (Math.random()*20-10));
                 if (this.tribo) {
@@ -332,15 +370,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         morrer() {
-            adicionarLog(`Um ${this.tipo} morreu de ${this.fome >= 100 ? 'fome' : this.sede >= 100 ? 'sede' : this.frio >= 100 ? 'frio' : 'velhice'}.`);
-            this.foiRemovido = true; 
+            if (this.foiRemovido) return;
+            const causaDaMorte = this.fome >= 100 ? 'fome' : this.sede >= 100 ? 'sede' : this.frio >= 100 ? 'frio' : this.age >= this.maxAge ? 'velhice' : 'combate';
+            adicionarLog(`Um ${this.tipo} morreu de ${causaDaMorte}.`);
+            this.foiRemovido = true;
+            
             carcacas.push(new Carcaca(this.x, this.y));
-            animais = animais.filter(a => a.id !== this.id);
-            if (this.tribo) this.tribo.removerMembro(this);
-            if (this.abrigo && (!this.tribo || this.tribo.membros.length === 0)) { 
-                this.abrigo.remover(); 
-                abrigos = abrigos.filter(ab => ab !== this.abrigo);
+            if (this.tribo) {
+                this.tribo.removerMembro(this);
             }
+            
+            animais = animais.filter(a => a.id !== this.id);
             this.remover();
         }
     }
@@ -350,34 +390,43 @@ document.addEventListener('DOMContentLoaded', () => {
     function iniciar() {
         world.innerHTML = '<div id="world-overlay"></div><div id="particle-container"></div>';
         particleContainer = document.getElementById('particle-container');
+        
         tribos.forEach(t => t.dissolver());
+        [...animais, ...comidas, ...aguas, ...obstaculos, ...abrigos, ...carcacas].forEach(e => e.remover());
+
         animais = []; comidas = []; aguas = []; obstaculos = []; abrigos = []; tribos = []; carcacas = [];
         tempo = 0; statsHistory = []; logMessages = []; logContainer.innerHTML = ''; currentEvent = 'nenhum';
+        
         world.className = `world-${scenarioSelect.value}`;
         for(let i=0; i<parseInt(numAguaInput.value); i++) aguas.push(new Agua());
         const tiposSel = Array.from(animalSelectionDiv.querySelectorAll('input')).filter(i => parseInt(i.value) > 0).map(i => i.dataset.tipo);
         if (tiposSel.length > 0) { for (let i = 0; i < parseInt(numComidaInput.value); i++) { const tC = DEFINICOES_ANIMAIS[tiposSel[Math.floor(Math.random() * tiposSel.length)]].come[0]; comidas.push(new Comida(tC)); } }
-        animalSelectionDiv.querySelectorAll('input').forEach(i => { for(let j=0; j<parseInt(i.value); j++) { animais.push(new Animal(i.dataset.tipo)); } });
+        animalSelectionDiv.querySelectorAll('input').forEach(i => { for(let j=0; j<parseInt(i.value); j++) { if (i.value > 0) animais.push(new Animal(i.dataset.tipo)); } });
+        
         setupChart(); setGameSpeed(1); Telas.mostrar('game'); adicionarLog("A simulação começou!");
     }
     function gameLoop() {
         if (!simulaçãoAtiva) return;
         tempo += 0.1 * currentSpeedMultiplier;
         updateWorldState();
+        
         [...animais].forEach(a => a.atualizar());
         [...carcacas].forEach(c => c.atualizar());
+        
         if (['floresta', 'deserto'].includes(scenarioSelect.value)) {
             let chanceCrescimento = currentEvent === 'chuva' ? 0.01 : 0.001;
             if (Math.random() < chanceCrescimento * currentSpeedMultiplier && comidas.filter(c => c.tipo === 'grama').length < 50) {
                 comidas.push(new Comida('grama'));
             }
         }
+        
         world.classList.toggle('hide-health-bars', animais.length > HEALTH_BAR_THRESHOLD);
-        populacaoTotalSpan.textContent = animais.length; tempoSpan.textContent = tempo.toFixed(1);
+        populacaoTotalSpan.textContent = animais.length;
+        tempoSpan.textContent = tempo.toFixed(1);
         const c = {}; animais.forEach(a => c[a.tipo] = (c[a.tipo] || 0) + 1);
         animalCountsDiv.innerHTML = Object.entries(DEFINICOES_ANIMAIS).map(([t, d]) => `<span>${d.nome}: ${c[t] || 0}</span>`).join('<br>');
-        if (animais.length === 0 && tempo > 5) finalizarSimulacao('extinção');
-        if (Math.floor(tempo) % 2 === 0 && !statsHistory.find(h => h.tempo === Math.floor(tempo))) { updateChart(); }
+        if (animais.length === 0 && tempo > 10) finalizarSimulacao('extinção');
+        if (Math.floor(tempo) % 2 === 0 && (!statsHistory.length || statsHistory[statsHistory.length-1].tempo !== Math.floor(tempo))) { updateChart(); }
     }
     function updateWorldState() {
         dayNightTimer += (0.1 * currentSpeedMultiplier);
@@ -386,13 +435,15 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (currentEvent !== 'nenhum') {
             adicionarLog(`O evento de ${currentEvent} terminou.`);
             world.classList.remove(`world-event`);
-            particleContainer.innerHTML = ''; currentEvent = 'nenhum';
+            if (particleContainer) particleContainer.innerHTML = '';
+            currentEvent = 'nenhum';
         } else if (Math.random() < 0.005 * currentSpeedMultiplier) {
             triggerWeatherEvent(Math.random() > 0.5 ? 'chuva' : 'nevasca');
         }
     }
     function triggerWeatherEvent(evento) {
-        if (weatherTimer > 0) return; currentEvent = evento;
+        if (weatherTimer > 0) return;
+        currentEvent = evento;
         weatherTimer = 20 + Math.random() * 20;
         world.classList.add(`world-event`);
         adicionarLog(`Um evento de ${evento} começou!`);
@@ -400,6 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (evento === 'chuva') aguas.forEach(a => a.refill());
     }
     function criarParticulas(tipo, quantidade) {
+        if (!particleContainer) return;
         particleContainer.innerHTML = '';
         for (let i = 0; i < quantidade; i++) {
             const p = document.createElement('div');
@@ -411,12 +463,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     function setGameSpeed(m) {
-        clearInterval(gameInterval); currentSpeedMultiplier = m;
-        if (m > 0) { simulaçãoAtiva = true; gameInterval = setInterval(gameLoop, 100 / m); } else { simulaçãoAtiva = false; }
+        clearInterval(gameInterval);
+        currentSpeedMultiplier = m;
+        if (m > 0) {
+            simulaçãoAtiva = true;
+            gameInterval = setInterval(gameLoop, 100 / m);
+        } else {
+            simulaçãoAtiva = false;
+        }
         document.querySelectorAll('.btn-time').forEach(b => { b.classList.toggle('active', parseFloat(b.dataset.speed) === m); });
     }
-    function finalizarSimulacao(m) { clearInterval(gameInterval); simulaçãoAtiva = false; if (m === 'extinção') { const msg = `A simulação terminou! A vida foi extinta em ${tempo.toFixed(1)} segundos.`; adicionarLog(msg); alert(msg); } }
-    function resetar() { finalizarSimulacao('reset'); modoDeColocarPedra = false; btnColocarPedra.classList.remove('active'); world.classList.remove('placing-mode'); Telas.mostrar('menu'); }
+    function finalizarSimulacao(m) {
+        clearInterval(gameInterval);
+        simulaçãoAtiva = false;
+        if (m === 'extinção') {
+            const msg = `A simulação terminou! A vida foi extinta em ${tempo.toFixed(1)} segundos.`;
+            adicionarLog(msg);
+            alert(msg);
+        }
+    }
+    function resetar() {
+        finalizarSimulacao('reset');
+        modoDeColocarPedra = false;
+        btnColocarPedra.classList.remove('active');
+        world.classList.remove('placing-mode');
+        Telas.mostrar('menu');
+    }
     function adicionarAnimal(t) { animais.push(new Animal(t)); }
     function adicionarComidaAleatoria() { if (animais.length === 0) return; const tC = Object.keys(DEFINICOES_COMIDAS)[Math.floor(Math.random() * Object.keys(DEFINICOES_COMIDAS).length)]; comidas.push(new Comida(tC)); }
     function toggleModoPedra() { modoDeColocarPedra = !modoDeColocarPedra; btnColocarPedra.classList.toggle('active', modoDeColocarPedra); world.classList.toggle('placing-mode', modoDeColocarPedra); }
@@ -426,8 +498,6 @@ document.addEventListener('DOMContentLoaded', () => {
         tribos.forEach(t => t.atualizarVisual());
         adicionarLog(`Modo de visualização de território ${modoTerritorio ? 'ativado' : 'desativado'}.`);
     }
-
-    // === LOG & GRÁFICOS ===
     function adicionarLog(mensagem) { const timestamp = tempo.toFixed(1); const logEntry = document.createElement('div'); logEntry.innerHTML = `<span>[${timestamp}s]</span> ${mensagem}`; logContainer.prepend(logEntry); logMessages.unshift(`[${timestamp}s] ${mensagem}`); if (logMessages.length > 50) { logMessages.pop(); logContainer.lastChild.remove(); } }
     function setupChart() { if(populationChart) populationChart.destroy(); const animalTypes = Object.keys(DEFINICOES_ANIMAIS); const datasets = animalTypes.map(tipo => { const color = tipo === 'rato' ? 'rgba(136, 136, 136, 0.8)' : 'rgba(212, 163, 115, 0.8)'; const borderColor = tipo === 'rato' ? 'rgba(136, 136, 136, 1)' : 'rgba(212, 163, 115, 1)'; return { label: DEFINICOES_ANIMAIS[tipo].nome, data: [], borderColor: borderColor, backgroundColor: color, tension: 0.1 }; }); populationChart = new Chart(populationChartCtx, { type: 'line', data: { labels: [], datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'População' } }, x: { title: { display: true, text: 'Tempo (s)' } } }, plugins: { legend: { position: 'top' } } } }); }
     function updateChart() { const t = Math.floor(tempo); statsHistory.push({ tempo: t, counts: Object.keys(DEFINICOES_ANIMAIS).reduce((acc, tipo) => { acc[tipo] = animais.filter(a => a.tipo === tipo).length; return acc; }, {}) }); populationChart.data.labels = statsHistory.map(h => h.tempo); populationChart.data.datasets.forEach(dataset => { const tipo = Object.keys(DEFINICOES_ANIMAIS).find(k => DEFINICOES_ANIMAIS[k].nome === dataset.label); dataset.data = statsHistory.map(h => h.counts[tipo]); }); populationChart.update(); }
@@ -453,4 +523,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // === INICIALIZAÇÃO DO JOGO ===
     popularSetup(); Telas.mostrar('menu');
-});```
+});
