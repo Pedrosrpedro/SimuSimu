@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SimuSimu - v0.3</title>
+    <title>SimuSimu - v0.4</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -41,6 +41,16 @@
             <p>População: <span id="populacaoTotal">0</span></p>
             <p>Tempo: <span id="tempo">0</span>s</p>
             <div id="animal-counts"></div>
+
+            <h3 class="panel-subtitle">Controle de Tempo</h3>
+            <div id="time-controls" class="btn-group">
+                <button class="btn-time" data-speed="0">||</button>
+                <button class="btn-time" data-speed="0.5">0.5x</button>
+                <button class="btn-time active" data-speed="1">1x</button>
+                <button class="btn-time" data-speed="2">2x</button>
+                <button class="btn-time" data-speed="5">5x</button>
+                <button class="btn-time" data-speed="10">10x</button>
+            </div>
 
             <h3 class="panel-subtitle">Interagir</h3>
             <button class="btn-interaction" id="btn-add-comida">+ Comida</button>
