@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const scenarioSelect = document.getElementById('scenario');
     const numComidaInput = document.getElementById('numComida');
     const numAguaInput = document.getElementById('numAgua');
-    // Botões
     const btnNovaSimulacao = document.getElementById('btn-nova-simulacao');
     const btnVoltarMenu = document.getElementById('btn-voltar-menu');
     const iniciarSimulacaoBtn = document.getElementById('iniciarSimulacao');
@@ -43,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // === VARIÁVEIS GLOBAIS DA SIMULAÇÃO ===
     let animais = [], comidas = [], aguas = [], obstaculos = [];
     let simulaçãoAtiva = false, tempo = 0, animalSendoArrastado = null, modoDeColocarPedra = false;
+    let isDragging = false;
     const WORLD_WIDTH = 800, WORLD_HEIGHT = 600, HEALTH_BAR_THRESHOLD = 15;
     let gameInterval, currentSpeedMultiplier = 1, dayNightTimer = 0, isNight = false, rainTimer = 0;
 
@@ -59,24 +59,15 @@ document.addEventListener('DOMContentLoaded', () => {
             this.width = this.element.offsetWidth;
             this.height = this.element.offsetHeight;
         }
-        remover() {
-            if (this.element.parentElement) world.removeChild(this.element);
-            this.foiRemovido = true;
-        }
+        remover() { if (this.element.parentElement) world.removeChild(this.element); this.foiRemovido = true; }
         getBounds() { return { left: this.x, right: this.x + this.width, top: this.y, bottom: this.y + this.height }; }
     }
-
     class Obstaculo extends Entidade { constructor(x, y) { super(x - 35, y - 35, 'pedra'); } }
     class Comida extends Entidade { constructor(tipo) { super(null, null, DEFINICOES_COMIDAS[tipo].classeCss + ' comida'); this.tipo = tipo; } }
     class Agua extends Entidade {
         constructor() { super(null, null, 'bebedouro agua'); }
-        refill() {
-            this.element.style.transition = 'transform 0.2s';
-            this.element.style.transform = 'scale(1.2)';
-            setTimeout(() => this.element.style.transform = 'scale(1)', 500);
-        }
+        refill() { this.element.style.transition = 'transform 0.2s'; this.element.style.transform = 'scale(1.2)'; setTimeout(() => this.element.style.transform = 'scale(1)', 500); }
     }
-
     class Animal extends Entidade {
         constructor(tipo, x, y) {
             super(x, y, DEFINICOES_ANIMAIS[tipo].classeCss + ' animal filhote');
@@ -86,50 +77,19 @@ document.addEventListener('DOMContentLoaded', () => {
             this.gender = Math.random() > 0.5 ? 'male' : 'female'; this.isGestating = false; this.gestationTimer = 0;
             this.lastKnownFoodLocation = null; this.lastKnownWaterLocation = null;
             this.alvo = null; this.estado = 'Vagando';
-            this.movedSincePress = false; this.pressTimer = null;
-
             this.healthBarContainer = document.createElement('div'); this.healthBarContainer.className = 'health-bar-container';
             this.healthBarFill = document.createElement('div'); this.healthBarFill.className = 'health-bar-fill';
-            this.healthBarContainer.appendChild(this.healthBarFill);
-            this.element.appendChild(this.healthBarContainer);
-
-            this.statusBubble = document.createElement('div'); this.statusBubble.className = 'status-bubble';
-            this.element.appendChild(this.statusBubble);
-
-            this.element.addEventListener('mousedown', (e) => this.handlePress(e));
-            this.element.addEventListener('mouseup', (e) => this.handleRelease(e));
-            this.element.addEventListener('touchstart', (e) => this.handlePress(e), { passive: false });
-            this.element.addEventListener('touchend', (e) => this.handleRelease(e));
-        }
-        handlePress(e) {
-            if (modoDeColocarPedra) return;
-            e.preventDefault();
-            this.movedSincePress = false;
-            animalSendoArrastado = this; // Inicia o arraste imediatamente para o mouse
-            if (e.type === 'touchstart') {
-                this.pressTimer = setTimeout(() => { // Em toque, espera para diferenciar de um toque simples
-                    if (this.movedSincePress) this.element.classList.add('dragging');
-                }, 200);
-            } else {
-                this.element.classList.add('dragging');
-            }
-        }
-        handleRelease(e) {
-            clearTimeout(this.pressTimer);
-            if (!this.movedSincePress && animalSendoArrastado) {
-                this.toggleStatusBubble();
-            }
-            if (animalSendoArrastado) this.element.classList.remove('dragging');
-            animalSendoArrastado = null; // Limpa a variável global
+            this.healthBarContainer.appendChild(this.healthBarFill); this.element.appendChild(this.healthBarContainer);
+            this.statusBubble = document.createElement('div'); this.statusBubble.className = 'status-bubble'; this.element.appendChild(this.statusBubble);
+            this.element.addEventListener('mousedown', (e) => { animalSendoArrastado = this; isDragging = false; });
+            this.element.addEventListener('touchstart', (e) => { animalSendoArrastado = this; isDragging = false; }, { passive: false });
         }
         toggleStatusBubble() {
-            document.querySelectorAll('.status-bubble.visible').forEach(b => {
-                if (b !== this.statusBubble) b.classList.remove('visible');
-            });
+            document.querySelectorAll('.status-bubble.visible').forEach(b => { if (b !== this.statusBubble) b.classList.remove('visible'); });
             this.statusBubble.classList.toggle('visible');
         }
         atualizar() {
-            if (this.foiRemovido || animalSendoArrastado === this) return;
+            if (this.foiRemovido || animalSendoArrastado === this && isDragging) return;
             this.age += 0.05; this.fome += 0.2; this.sede += (scenarioSelect.value === 'deserto' ? 0.3 : 0.25);
             if (this.isMature) this.reproductionUrge += 0.3;
             if (this.fome >= 100 || this.sede >= 100 || this.age >= this.maxAge) { this.morrer(); return; }
@@ -194,7 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === FUNÇÕES DE CONTROLE DA SIMULAÇÃO ===
     function popularSetup() { animalSelectionDiv.innerHTML = ''; for (const [tipo, def] of Object.entries(DEFINICOES_ANIMAIS)) { const group = document.createElement('div'); group.className = 'animal-input-group'; group.innerHTML = `<label for="num-${tipo}">${def.nome}:</label><input type="number" id="num-${tipo}" data-tipo="${tipo}" value="2" min="0" max="20">`; animalSelectionDiv.appendChild(group); } }
-    
     function iniciar() {
         world.innerHTML = '<div id="world-overlay"></div>'; animais = []; comidas = []; aguas = []; obstaculos = []; tempo = 0;
         world.className = `world-${scenarioSelect.value}`;
@@ -205,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setGameSpeed(1);
         Telas.mostrar('game');
     }
-
     function gameLoop() {
         if (!simulaçãoAtiva) return;
         tempo += 0.1 * currentSpeedMultiplier;
@@ -218,21 +176,18 @@ document.addEventListener('DOMContentLoaded', () => {
         animalCountsDiv.innerHTML = Object.entries(DEFINICOES_ANIMAIS).map(([tipo, def]) => `<span>${def.nome}: ${counts[tipo] || 0}</span>`).join('<br>');
         if (animais.length === 0 && tempo > 1) finalizarSimulacao('extinção');
     }
-
     function updateWorldState() {
         dayNightTimer += (0.1 * currentSpeedMultiplier);
         if (dayNightTimer > 60) { dayNightTimer = 0; isNight = !isNight; world.classList.toggle('world-night', isNight); }
         if (rainTimer > 0) { rainTimer -= 0.1; if (rainTimer <= 0) world.classList.remove('world-rain'); }
         if (Math.random() < 0.0005 * currentSpeedMultiplier) { triggerRain(); }
     }
-
     function triggerRain() {
         if (rainTimer > 0) return;
         rainTimer = 10 + Math.random() * 10;
         world.classList.add('world-rain');
         aguas.forEach(agua => agua.refill());
     }
-
     function setGameSpeed(multiplier) {
         clearInterval(gameInterval);
         currentSpeedMultiplier = multiplier;
@@ -244,13 +199,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         timeControlButtons.forEach(btn => { btn.classList.toggle('active', parseFloat(btn.dataset.speed) === multiplier); });
     }
-
     function finalizarSimulacao(motivo) {
         clearInterval(gameInterval);
         simulaçãoAtiva = false;
         if (motivo === 'extinção') alert(`A simulação terminou! A vida foi extinta em ${tempo.toFixed(1)} segundos.`);
     }
-
     function resetar() {
         finalizarSimulacao('reset');
         modoDeColocarPedra = false;
@@ -258,12 +211,11 @@ document.addEventListener('DOMContentLoaded', () => {
         world.classList.remove('placing-mode');
         Telas.mostrar('menu');
     }
-
     function adicionarAnimal(tipo) { animais.push(new Animal(tipo)); }
     function adicionarComidaAleatoria() { if(animais.length === 0) return; const tipoAnimal = animais[Math.floor(Math.random() * animais.length)].tipo; const tipoComida = DEFINICOES_ANIMAIS[tipoAnimal].come[0]; comidas.push(new Comida(tipoComida)); }
     function toggleModoPedra() { modoDeColocarPedra = !modoDeColocarPedra; btnColocarPedra.classList.toggle('active', modoDeColocarPedra); world.classList.toggle('placing-mode', modoDeColocarPedra); }
 
-    // === EVENT LISTENERS GERAIS ===
+    // === EVENT LISTENERS ===
     btnNovaSimulacao.addEventListener('click', () => Telas.mostrar('setup'));
     btnVoltarMenu.addEventListener('click', () => Telas.mostrar('menu'));
     iniciarSimulacaoBtn.addEventListener('click', iniciar);
@@ -273,14 +225,24 @@ document.addEventListener('DOMContentLoaded', () => {
     btnAddCoelho.addEventListener('click', () => adicionarAnimal('coelho'));
     btnColocarPedra.addEventListener('click', toggleModoPedra);
     timeControlButtons.forEach(button => { button.addEventListener('click', () => { setGameSpeed(parseFloat(button.dataset.speed)); }); });
+    world.addEventListener('click', (e) => {
+        if (modoDeColocarPedra) {
+            const rect = world.getBoundingClientRect();
+            obstaculos.push(new Obstaculo(e.clientX - rect.left, e.clientY - rect.top));
+        }
+    });
 
-    function getEventPosition(e) { return e.touches && e.touches.length > 0 ? e.touches[0] : e; }
-    
+    // === LÓGICA DE ARRASTAR E TOCAR (NOVA E CORRIGIDA) ===
+    function getEventPosition(e) {
+        return e.touches && e.touches.length > 0 ? e.touches[0] : e;
+    }
     function handleGlobalMove(e) {
         if (!animalSendoArrastado) return;
-        e.preventDefault();
-        animalSendoArrastado.movedSincePress = true;
-        if (!animalSendoArrastado.element.classList.contains('dragging')) animalSendoArrastado.element.classList.add('dragging');
+        if (e.type === 'touchmove') e.preventDefault();
+        isDragging = true;
+        if (!animalSendoArrastado.element.classList.contains('dragging')) {
+            animalSendoArrastado.element.classList.add('dragging');
+        }
         const pos = getEventPosition(e);
         const rect = world.getBoundingClientRect();
         animalSendoArrastado.x = pos.clientX - rect.left - (animalSendoArrastado.width / 2);
@@ -288,24 +250,19 @@ document.addEventListener('DOMContentLoaded', () => {
         animalSendoArrastado.element.style.left = `${animalSendoArrastado.x}px`;
         animalSendoArrastado.element.style.top = `${animalSendoArrastado.y}px`;
     }
-
-    world.addEventListener('click', (e) => {
-        if (modoDeColocarPedra) {
-            const rect = world.getBoundingClientRect();
-            obstaculos.push(new Obstaculo(e.clientX - rect.left, e.clientY - rect.top));
+    function handleGlobalEnd(e) {
+        if (!animalSendoArrastado) return;
+        if (!isDragging) {
+            animalSendoArrastado.toggleStatusBubble();
         }
-    });
-    
+        animalSendoArrastado.element.classList.remove('dragging');
+        animalSendoArrastado = null;
+        isDragging = false;
+    }
     window.addEventListener('mousemove', handleGlobalMove);
     window.addEventListener('touchmove', handleGlobalMove, { passive: false });
-    window.addEventListener('mouseup', (e) => { if (animalSendoArrastado) handleEnd(e); });
-    window.addEventListener('touchend', (e) => { if (animalSendoArrastado) handleEnd(e); });
-
-    function handleEnd(e) {
-        if(animalSendoArrastado) {
-             animalSendoArrastado.handleRelease(e)
-        }
-    }
+    window.addEventListener('mouseup', handleGlobalEnd);
+    window.addEventListener('touchend', handleGlobalEnd);
 
     // === INICIALIZAÇÃO ===
     popularSetup();
