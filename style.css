@@ -67,10 +67,8 @@ h2 { font-size: 20px; margin-bottom: 15px; }
 button { display: block; width: 100%; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 15px; transition: all 0.2s ease; }
 button:hover { transform: translateY(-2px); filter: brightness(1.1); }
 button:active { transform: translateY(0); filter: brightness(1); }
-/* Botão primário */
 .theme-dark button { background-color: var(--accent-dark); color: #1a202c; }
 .theme-light button { background-color: var(--accent-light); color: #fff; }
-/* Outros tipos de botão */
 .btn-secondary { background-color: transparent; border: 1px solid; }
 .theme-dark .btn-secondary { color: var(--text-muted-dark); border-color: var(--border-dark); }
 .theme-light .btn-secondary { color: var(--text-muted-light); border-color: var(--border-light); }
@@ -108,7 +106,7 @@ button:active { transform: translateY(0); filter: brightness(1); }
 /* --- CONTROLES DE TEMPO E INTERAÇÃO --- */
 .btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .btn-time, .btn-interaction { flex-grow: 1; padding: 10px; font-size: 14px; margin: 0; }
-.btn-time { flex-basis: 25%; }
+.btn-time { flex-basis: 25%; display: flex; justify-content: center; align-items: center; }
 .btn-time svg { width: 18px; height: 18px; fill: currentColor; }
 .theme-dark .btn-time { background-color: var(--border-dark); color: var(--text-dark); }
 .theme-light .btn-time { background-color: var(--border-light); color: var(--text-light); }
@@ -124,13 +122,24 @@ button:active { transform: translateY(0); filter: brightness(1); }
 #world-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; transition: background-color 2s ease-in-out; z-index: 50; }
 .world-night #world-overlay { background-color: rgba(10, 20, 50, 0.4); }
 .world-rain #world-overlay { background: linear-gradient(to bottom, rgba(135, 206, 250, 0.1), rgba(70, 130, 180, 0.3)), url(https://i.gifer.com/762y.gif); background-size: cover; opacity: 0.7; }
+
+/* CORREÇÃO: REGRAS DE IMAGEM ADICIONADAS DE VOLTA */
+.world-aquario { background-image: url('images/aquario_fundo.jpg'); }
+.world-floresta { background-image: url('images/floresta_fundo.jpg'); }
+.world-deserto { background-image: url('images/deserto_fundo.jpg'); }
+
 .entity { position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center; transition: opacity 0.5s, transform 0.5s; }
 .animal { z-index: 10; cursor: grab; }
 .animal.dragging { z-index: 100; cursor: grabbing; transform: scale(1.1); filter: drop-shadow(0 0 10px var(--accent-dark)); }
-/* Estilos de animais, comidas, etc. permanecem os mesmos */
+
 .rato { width: 60px; height: 60px; background-image: url('images/rato.png'); }
 .coelho { width: 65px; height: 65px; background-image: url('images/coelho.png'); }
 .animal.filhote { width: 30px; height: 30px; }
+
+/* CORREÇÃO: REGRAS DE IMAGEM ADICIONADAS DE VOLTA */
+.racao { width: 25px; height: 25px; background-image: url('images/racao.png'); z-index: 5; }
+.grama { width: 30px; height: 30px; background-image: url('images/grama.png'); z-index: 5; }
+.bebedouro { width: 60px; height: 60px; background-image: url('images/bebedouro.png'); z-index: 5; }
 .pedra { width: 70px; height: 70px; background-image: url('images/pedra.png'); z-index: 20; }
 
 /* --- UI DOS ANIMAIS (Barras de Vida, Balão) --- */
