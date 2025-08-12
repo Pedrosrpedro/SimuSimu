@@ -131,7 +131,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!this.isMature && this.age > 20) { this.isMature = true; this.element.classList.remove('filhote'); }
             if (this.isGestating) { if (--this.gestationTimer <= 0) this.darALuz(); }
             else { this.decidirAcao(); if (this.alvo) this.moverParaAlvo(); else this.vagar(); }
-            this.element.style.left = `${this.x}px`; this.element.style.top = `${this.y}px`;
+            this.element.style.left = `${this.x}px`;
+            this.element.style.top = `${this.y}px`;
             this.element.style.opacity = Math.max(0.3, (100 - Math.max(this.fome, this.sede, this.frio)) / 100);
             this.atualizarUI();
         }
@@ -141,8 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.healthBarFill.style.width = `${bemEstar}%`;
             if (bemEstar > 60) this.healthBarFill.className = 'health-bar-fill health-green'; else if (bemEstar > 30) this.healthBarFill.className = 'health-bar-fill health-yellow'; else this.healthBarFill.className = 'health-bar-fill health-red';
             this.statusBubble.textContent = this.getStatusText();
-            // Lógica para se esconder no abrigo
-            const deveSeEsconder = this.estaNoAbrigo() && ['Descansando no abrigo', 'Buscando abrigo'].includes(this.estado);
+            const deveSeEsconder = this.estaNoAbrigo() && ['Descansando no abrigo', 'Buscando abrigo', 'Pegando comida no abrigo'].includes(this.estado);
             this.element.classList.toggle('escondido', deveSeEsconder);
         }
         getStatusText() {
@@ -256,6 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (evento === 'chuva') aguas.forEach(a => a.refill());
     }
     function criarParticulas(tipo, quantidade) {
+        particleContainer.innerHTML = ''; // Limpa partículas antigas
         for (let i = 0; i < quantidade; i++) {
             const p = document.createElement('div');
             p.className = `particula ${tipo}`;
@@ -276,12 +277,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function adicionarComidaAleatoria() { if (animais.length === 0) return; const tC = Object.keys(DEFINICOES_COMIDAS)[Math.floor(Math.random() * Object.keys(DEFINICOES_COMIDAS).length)]; comidas.push(new Comida(tC)); }
     function toggleModoPedra() { modoDeColocarPedra = !modoDeColocarPedra; btnColocarPedra.classList.toggle('active', modoDeColocarPedra); world.classList.toggle('placing-mode', modoDeColocarPedra); }
 
-    // === LOG & GRÁFICOS (Sem alterações) ===
+    // === LOG & GRÁFICOS ===
     function adicionarLog(mensagem) { const timestamp = tempo.toFixed(1); const logEntry = document.createElement('div'); logEntry.innerHTML = `<span>[${timestamp}s]</span> ${mensagem}`; logContainer.prepend(logEntry); logMessages.unshift(`[${timestamp}s] ${mensagem}`); if (logMessages.length > 50) { logMessages.pop(); logContainer.lastChild.remove(); } }
     function setupChart() { if(populationChart) populationChart.destroy(); const animalTypes = Object.keys(DEFINICOES_ANIMAIS); const datasets = animalTypes.map(tipo => { const color = tipo === 'rato' ? 'rgba(136, 136, 136, 0.8)' : 'rgba(212, 163, 115, 0.8)'; const borderColor = tipo === 'rato' ? 'rgba(136, 136, 136, 1)' : 'rgba(212, 163, 115, 1)'; return { label: DEFINICOES_ANIMAIS[tipo].nome, data: [], borderColor: borderColor, backgroundColor: color, tension: 0.1 }; }); populationChart = new Chart(populationChartCtx, { type: 'line', data: { labels: [], datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'População' } }, x: { title: { display: true, text: 'Tempo (s)' } } }, plugins: { legend: { position: 'top' } } } }); }
     function updateChart() { const t = Math.floor(tempo); statsHistory.push({ tempo: t, counts: Object.keys(DEFINICOES_ANIMAIS).reduce((acc, tipo) => { acc[tipo] = animais.filter(a => a.tipo === tipo).length; return acc; }, {}) }); populationChart.data.labels = statsHistory.map(h => h.tempo); populationChart.data.datasets.forEach(dataset => { const tipo = Object.keys(DEFINICOES_ANIMAIS).find(k => DEFINICOES_ANIMAIS[k].nome === dataset.label); dataset.data = statsHistory.map(h => h.counts[tipo]); }); populationChart.update(); }
 
-    // === EVENT LISTENERS & INTERAÇÃO (Sem alterações) ===
+    // === EVENT LISTENERS & INTERAÇÃO ===
     btnNovaSimulacao.addEventListener('click', () => Telas.mostrar('setup'));
     btnVoltarMenu.addEventListener('click', () => Telas.mostrar('menu'));
     iniciarSimulacaoBtn.addEventListener('click', iniciar);
@@ -298,5 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
     world.addEventListener('mousedown', handleInteractionStart); world.addEventListener('touchstart', handleInteractionStart, { passive: false });
     window.addEventListener('mousemove', handleInteractionMove); window.addEventListener('touchmove', handleInteractionMove, { passive: false });
     window.addEventListener('mouseup', handleInteractionEnd); window.addEventListener('touchend', handleInteractionEnd);
+    
+    // === INICIALIZAÇÃO DO JOGO ===
     popularSetup(); Telas.mostrar('menu');
 });
