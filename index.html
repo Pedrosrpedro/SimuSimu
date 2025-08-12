@@ -5,29 +5,115 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>SimuSimu - v0.8</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Importação da biblioteca de gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="theme-dark">
 
-<!-- Telas de Menu e Setup (sem alterações) -->
-<div id="main-menu-container" class="panel">...</div>
-<div id="setup-container" class="panel hidden">...</div>
+<!-- TELA 1: MENU PRINCIPAL -->
+<div id="main-menu-container" class="panel">
+    <h1 class="game-title">SimuSimu</h1>
+    <p class="game-subtitle">Um Simulador de Simulações</p>
+    <button id="btn-nova-simulacao">Nova Simulação</button>
+    <button class="btn-disabled" title="Em breve!">Carregar Simulação</button>
+    <button id="btn-toggle-theme" class="btn-secondary">Alternar Tema</button>
+</div>
+
+<!-- TELA 2: CONFIGURAÇÃO DA SIMULAÇÃO -->
+<div id="setup-container" class="panel hidden">
+    <h1>Configurar Nova Simulação</h1>
+    <div class="setup-section">
+        <h3>Cenário e Recursos</h3>
+        <div class="input-group"><label for="scenario">Cenário:</label><select id="scenario"><option value="floresta">Floresta</option><option value="aquario">Aquário</option><option value="deserto">Deserto</option></select></div>
+        <div class="input-group"><label for="numComida">Comida Inicial:</label><input type="number" id="numComida" value="15" min="1" max="50"></div>
+        <div class="input-group"><label for="numAgua">Água Inicial:</label><input type="number" id="numAgua" value="5" min="1" max="20"></div>
+    </div>
+    <div class="setup-section">
+        <h3>Animais Iniciais</h3>
+        <div id="animal-selection"></div>
+    </div>
+    <button id="iniciarSimulacao">Iniciar Simulação</button>
+    <button id="btn-voltar-menu" class="btn-secondary">Voltar ao Menu</button>
+</div>
 
 <!-- TELA 3: JOGO -->
 <div id="game-container" class="hidden">
     <div id="world">
         <div id="world-overlay"></div>
-        <!-- Adicionado o container para as partículas de chuva/neve -->
+        <!-- Container para as partículas de chuva/neve -->
         <div id="particle-container"></div>
     </div>
+    
     <div id="info-panel" class="panel">
-        <!-- Painel de informações com abas (sem alterações) -->
-        ...
+        <div class="tabs">
+            <button class="tab-button active" data-tab="status">Status</button>
+            <button class="tab-button" data-tab="graficos">Gráficos</button>
+            <button class="tab-button" data-tab="log">Log</button>
+        </div>
+
+        <!-- Aba de Status -->
+        <div id="tab-status" class="tab-content active">
+            <h2>Status da Simulação</h2>
+            <div class="stats-grid">
+                <div class="stat-item"><span>População</span><span id="populacaoTotal">0</span></div>
+                <div class="stat-item"><span>Tempo</span><span id="tempo">0s</span></div>
+            </div>
+            <div id="animal-counts"></div>
+
+            <h3 class="panel-subtitle">Controle de Tempo</h3>
+            <div id="time-controls" class="btn-group">
+                <button class="btn-time" data-speed="0" title="Pausar"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
+                <button class="btn-time" data-speed="0.5" title="Câmera Lenta"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M10 18l-6-6 6-6v12zM18 6l-6 6 6 6V6z"/></svg></button>
+                <button class="btn-time active" data-speed="1" title="Velocidade Normal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M8 5v14l11-7z"/></svg></button>
+                <button class="btn-time" data-speed="2" title="2x Velocidade"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+                <button class="btn-time" data-speed="5" title="5x Velocidade"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg></button>
+            </div>
+
+            <h3 class="panel-subtitle">Interagir</h3>
+            <button class="btn-interaction" id="btn-add-comida">+ Comida</button>
+            <button class="btn-interaction" id="btn-add-rato">+ Rato</button>
+            <button class="btn-interaction" id="btn-add-coelho">+ Coelho</button>
+            <button class="btn-interaction" id="btn-colocar-pedra">Colocar Pedra</button>
+        </div>
+
+        <!-- Aba de Gráficos -->
+        <div id="tab-graficos" class="tab-content">
+            <h2>Gráfico Populacional</h2>
+            <div class="chart-container">
+                <canvas id="populationChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Aba de Log -->
+        <div id="tab-log" class="tab-content">
+            <h2>Log de Eventos</h2>
+            <div id="log-container"></div>
+        </div>
+        
+        <button id="resetarSimulacao" class="btn-danger">Encerrar Simulação</button>
     </div>
 </div>
 
-<!-- Scripts (sem alterações) -->
-<script>...</script>
+<!-- Script para controle das abas -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const infoPanel = document.getElementById('info-panel');
+    if (!infoPanel) return;
+
+    infoPanel.addEventListener('click', function(e) {
+        if (e.target.matches('.tab-button')) {
+            const tabId = e.target.dataset.tab;
+            
+            infoPanel.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            infoPanel.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            e.target.classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+        }
+    });
+});
+</script>
 <script src="script.js"></script>
+
 </body>
 </html>
