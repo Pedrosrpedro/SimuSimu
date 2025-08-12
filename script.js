@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // === DEFINIÇÕES GLOBAIS ===
     const DEFINICOES_ANIMAIS = {
-        rato: { nome: 'Rato', come: ['racao', 'grama'], classeCss: 'rato' }, // Ratos agora comem de tudo
+        rato: { nome: 'Rato', come: ['racao', 'grama'], classeCss: 'rato' },
         coelho: { nome: 'Coelho', come: ['grama'], classeCss: 'coelho' },
     };
     const DEFINICOES_COMIDAS = {
@@ -40,16 +40,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const timeControlButtons = document.querySelectorAll('.btn-time');
     const logContainer = document.getElementById('log-container');
     const populationChartCtx = document.getElementById('populationChart').getContext('2d');
+    let particleContainer; // Definido na inicialização
 
     // === VARIÁVEIS GLOBAIS DA SIMULAÇÃO ===
     let animais = [], comidas = [], aguas = [], obstaculos = [], abrigos = [];
     let simulaçãoAtiva = false, tempo = 0, modoDeColocarPedra = false;
     const WORLD_WIDTH = 800, WORLD_HEIGHT = 600, HEALTH_BAR_THRESHOLD = 15;
     let gameInterval, currentSpeedMultiplier = 1, dayNightTimer = 0, isNight = false;
-    let weatherTimer = 0, currentEvent = 'nenhum'; // 'nenhum', 'chuva', 'nevasca'
-    let populationChart;
-    let logMessages = [];
-    let statsHistory = [];
+    let weatherTimer = 0, currentEvent = 'nenhum';
+    let populationChart, logMessages = [], statsHistory = [];
 
     // === VARIÁVEIS DE INTERAÇÃO ===
     let objetoInteragido = null, isDragging = false, startX, startY;
@@ -85,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.dono = dono;
             this.estoqueComida = [];
             this.capacidadeEstoque = 5;
+            this.element.style.setProperty('--food-count', this.estoqueComida.length);
             adicionarLog(`Um abrigo foi construído por um ${dono.tipo}.`);
         }
         adicionarComida(comida) {
@@ -94,16 +94,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 comidas = comidas.filter(c => c !== comida);
                 this.element.style.setProperty('--food-count', this.estoqueComida.length);
                 return true;
-            }
-            return false;
+            } return false;
         }
         pegarComida() {
             if (this.estoqueComida.length > 0) {
                 const tipoComida = this.estoqueComida.pop();
                 this.element.style.setProperty('--food-count', this.estoqueComida.length);
                 return tipoComida;
-            }
-            return null;
+            } return null;
         }
     }
 
@@ -114,8 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tipo, fome: 20, sede: 20, age: 0, reproductionUrge: 0,
                 velocidade: 2.5 + Math.random(), isMature: false, maxAge: 80 + Math.random() * 40,
                 gender: Math.random() > 0.5 ? 'male' : 'female', isGestating: false, gestationTimer: 0,
-                alvo: null, estado: 'Vagando', abrigo: null, frio: 0,
-                oQueCome: DEFINICOES_ANIMAIS[tipo].come
+                alvo: null, estado: 'Vagando', abrigo: null, frio: 0, oQueCome: DEFINICOES_ANIMAIS[tipo].come
             });
             this.element.classList.add('filhote');
             this.healthBarContainer = document.createElement('div'); this.healthBarContainer.className = 'health-bar-container';
@@ -124,38 +121,32 @@ document.addEventListener('DOMContentLoaded', () => {
             this.statusBubble = document.createElement('div'); this.statusBubble.className = 'status-bubble'; this.element.appendChild(this.statusBubble);
             adicionarLog(`Um ${this.tipo} ${this.gender} nasceu.`);
         }
-        toggleStatusBubble() {
-            document.querySelectorAll('.status-bubble.visible').forEach(b => { if (b !== this.statusBubble) b.classList.remove('visible'); });
-            this.statusBubble.classList.toggle('visible');
-        }
+        toggleStatusBubble() { document.querySelectorAll('.status-bubble.visible').forEach(b => { if (b !== this.statusBubble) b.classList.remove('visible'); }); this.statusBubble.classList.toggle('visible'); }
         atualizar() {
             if (this.foiRemovido || (objetoInteragido === this && isDragging)) return;
             this.age += 0.05; this.fome += 0.2; this.sede += (scenarioSelect.value === 'deserto' ? 0.3 : 0.25);
             if (this.isMature) this.reproductionUrge += 0.3;
             if (currentEvent === 'nevasca' && !this.estaNoAbrigo()) this.frio += 0.4; else this.frio = Math.max(0, this.frio - 0.2);
             if (this.fome >= 100 || this.sede >= 100 || this.age >= this.maxAge || this.frio >= 100) { this.morrer(); return; }
-            if (!this.isMature && this.age > 20) { this.isMature = true; this.element.classList.remove('filhote'); this.element.style.transform = 'scale(1)'; }
+            if (!this.isMature && this.age > 20) { this.isMature = true; this.element.classList.remove('filhote'); }
             if (this.isGestating) { if (--this.gestationTimer <= 0) this.darALuz(); }
             else { this.decidirAcao(); if (this.alvo) this.moverParaAlvo(); else this.vagar(); }
             this.element.style.left = `${this.x}px`; this.element.style.top = `${this.y}px`;
             this.element.style.opacity = Math.max(0.3, (100 - Math.max(this.fome, this.sede, this.frio)) / 100);
             this.atualizarUI();
         }
-        estaNoAbrigo() {
-            if (!this.abrigo) return false;
-            const d = Math.hypot(this.x - this.abrigo.x, this.y - this.abrigo.y);
-            return d < 20; // Está dentro se a distância for pequena
-        }
+        estaNoAbrigo() { if (!this.abrigo) return false; const d = Math.hypot(this.x - this.abrigo.x, this.y - this.abrigo.y); return d < 15; }
         atualizarUI() {
             const bemEstar = 100 - Math.max(this.fome, this.sede, this.frio);
             this.healthBarFill.style.width = `${bemEstar}%`;
-            if (bemEstar > 60) this.healthBarFill.className = 'health-bar-fill health-green';
-            else if (bemEstar > 30) this.healthBarFill.className = 'health-bar-fill health-yellow';
-            else this.healthBarFill.className = 'health-bar-fill health-red';
+            if (bemEstar > 60) this.healthBarFill.className = 'health-bar-fill health-green'; else if (bemEstar > 30) this.healthBarFill.className = 'health-bar-fill health-yellow'; else this.healthBarFill.className = 'health-bar-fill health-red';
             this.statusBubble.textContent = this.getStatusText();
+            // Lógica para se esconder no abrigo
+            const deveSeEsconder = this.estaNoAbrigo() && ['Descansando no abrigo', 'Buscando abrigo'].includes(this.estado);
+            this.element.classList.toggle('escondido', deveSeEsconder);
         }
         getStatusText() {
-            let s = this.estado, n = [];
+            let s = this.estado; let n = [];
             if(this.fome > 70) n.push('morrendo de fome'); else if (this.fome > 40) n.push('com fome');
             if(this.sede > 70) n.push('morrendo de sede'); else if (this.sede > 40) n.push('com sede');
             if(currentEvent === 'chuva' && !this.estaNoAbrigo()) n.push('molhado');
@@ -176,9 +167,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (podeConstruirAbrigo && !this.abrigo && this.isMature && this.fome < 30 && this.sede < 30) { this.estado = "Construindo abrigo"; this.alvo = { x: this.x, y: this.y, construindo: true }; return; }
             if (this.abrigo && this.abrigo.estoqueComida.length < this.abrigo.capacidadeEstoque && this.fome < 40) {
-                this.alvo = this.encontrarComida(); if(this.alvo) this.estado = 'Estocando comida'; return;
+                this.alvo = this.encontrarComida(); if (this.alvo) this.estado = 'Estocando comida'; return;
             }
-            if(this.abrigo && this.estaNoAbrigo() && this.fome < 80 && this.sede < 80) { this.estado = 'Descansando no abrigo'; this.alvo = null; return; }
+            if (this.estaNoAbrigo() && this.fome < 80 && this.sede < 80) { this.estado = 'Descansando no abrigo'; this.alvo = null; return; }
             this.estado = 'Vagando'; this.alvo = null;
         }
         encontrarComida() { const c = comidas.filter(c => this.oQueCome.includes(c.tipo)); return this.encontrarMaisProximo(c); }
@@ -199,17 +190,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'Construindo abrigo': if (this.alvo.construindo) { this.abrigo = new Abrigo(this.x, this.y, this); abrigos.push(this.abrigo); } break;
                 case 'Estocando comida': if (this.abrigo && this.alvo) { this.abrigo.adicionarComida(this.alvo); } break;
                 case 'Pegando comida no abrigo': if (this.abrigo?.pegarComida()) { this.fome = Math.max(0, this.fome - 60); } break;
-                case 'Buscando abrigo': /* Apenas chegar perto já resolve */ break;
-            }
-            this.alvo = null;
+            } this.alvo = null;
         }
         checarColisao(x, y) { for (const o of [...obstaculos, ...abrigos.filter(a => a !== this.abrigo)]) { const b = o.getBounds(); if (x < b.right && x + this.width > b.left && y < b.bottom && y + this.height > b.top) return true; } return false; }
         vagar() { if (!this.vagarAlvo || Math.random() < 0.05) { this.vagarAlvo = { x: Math.random() * WORLD_WIDTH, y: Math.random() * WORLD_HEIGHT }; } const dx = this.vagarAlvo.x - this.x, dy = this.vagarAlvo.y - this.y, d = Math.hypot(dx, dy); if (d < 20) this.vagarAlvo = null; else { let nX = this.x + (dx / d) * (this.velocidade / 2), nY = this.y + (dy / d) * (this.velocidade / 2); if (!this.checarColisao(nX, nY)) { this.x = nX; this.y = nY; } else { this.vagarAlvo = null; } } }
         darALuz() { this.isGestating = false; const n = Math.floor(Math.random() * 3) + 1; for(let i=0; i<n; i++) { animais.push(new Animal(this.tipo, this.x + (Math.random()*20-10), this.y + (Math.random()*20-10))); } }
         morrer() {
             adicionarLog(`Um ${this.tipo} morreu de ${this.fome >= 100 ? 'fome' : this.sede >= 100 ? 'sede' : this.frio >= 100 ? 'frio' : 'velhice'}.`);
-            this.foiRemovido = true;
-            animais = animais.filter(a => a.id !== this.id);
+            this.foiRemovido = true; animais = animais.filter(a => a.id !== this.id);
             if (this.abrigo) { this.abrigo.remover(); abrigos = abrigos.filter(ab => ab !== this.abrigo); }
             this.element.style.transform = 'rotate(180deg)'; this.element.style.opacity = '0.4'; this.element.style.zIndex = '1';
         }
@@ -218,155 +206,82 @@ document.addEventListener('DOMContentLoaded', () => {
     // === FUNÇÕES DE CONTROLE DA SIMULAÇÃO ===
     function popularSetup() { animalSelectionDiv.innerHTML = ''; for (const [t, d] of Object.entries(DEFINICOES_ANIMAIS)) { const g = document.createElement('div'); g.className = 'animal-input-group'; g.innerHTML = `<label for="num-${t}">${d.nome}:</label><input type="number" id="num-${t}" data-tipo="${t}" value="2" min="0" max="20">`; animalSelectionDiv.appendChild(g); } }
     function iniciar() {
-        world.innerHTML = '<div id="world-overlay"></div>';
+        world.innerHTML = '<div id="world-overlay"></div><div id="particle-container"></div>';
+        particleContainer = document.getElementById('particle-container');
         animais = []; comidas = []; aguas = []; obstaculos = []; abrigos = [];
-        tempo = 0; statsHistory = []; logMessages = []; logContainer.innerHTML = '';
-        currentEvent = 'nenhum';
+        tempo = 0; statsHistory = []; logMessages = []; logContainer.innerHTML = ''; currentEvent = 'nenhum';
         world.className = `world-${scenarioSelect.value}`;
         for(let i=0; i<parseInt(numAguaInput.value); i++) aguas.push(new Agua());
         const tiposSel = Array.from(animalSelectionDiv.querySelectorAll('input')).filter(i => parseInt(i.value) > 0).map(i => i.dataset.tipo);
         if (tiposSel.length > 0) { for (let i = 0; i < parseInt(numComidaInput.value); i++) { const tC = DEFINICOES_ANIMAIS[tiposSel[Math.floor(Math.random() * tiposSel.length)]].come[0]; comidas.push(new Comida(tC)); } }
         animalSelectionDiv.querySelectorAll('input').forEach(i => { for(let j=0; j<parseInt(i.value); j++) { animais.push(new Animal(i.dataset.tipo)); } });
-        setupChart();
-        setGameSpeed(1); Telas.mostrar('game');
-        adicionarLog("A simulação começou!");
+        setupChart(); setGameSpeed(1); Telas.mostrar('game'); adicionarLog("A simulação começou!");
     }
     function gameLoop() {
         if (!simulaçãoAtiva) return;
         tempo += 0.1 * currentSpeedMultiplier;
         updateWorldState();
         [...animais].forEach(a => a.atualizar());
+        if (['floresta', 'deserto'].includes(scenarioSelect.value)) {
+            let chanceCrescimento = currentEvent === 'chuva' ? 0.01 : 0.001;
+            if (Math.random() < chanceCrescimento * currentSpeedMultiplier && comidas.filter(c => c.tipo === 'grama').length < 50) {
+                comidas.push(new Comida('grama'));
+            }
+        }
         world.classList.toggle('hide-health-bars', animais.length > HEALTH_BAR_THRESHOLD);
-        populacaoTotalSpan.textContent = animais.length;
-        tempoSpan.textContent = tempo.toFixed(1);
-        const c = {};
-        animais.forEach(a => c[a.tipo] = (c[a.tipo] || 0) + 1);
+        populacaoTotalSpan.textContent = animais.length; tempoSpan.textContent = tempo.toFixed(1);
+        const c = {}; animais.forEach(a => c[a.tipo] = (c[a.tipo] || 0) + 1);
         animalCountsDiv.innerHTML = Object.entries(DEFINICOES_ANIMAIS).map(([t, d]) => `<span>${d.nome}: ${c[t] || 0}</span>`).join('<br>');
         if (animais.length === 0 && tempo > 5) finalizarSimulacao('extinção');
-        if (Math.floor(tempo) % 2 === 0 && !statsHistory.find(h => h.tempo === Math.floor(tempo))) {
-             updateChart();
-        }
+        if (Math.floor(tempo) % 2 === 0 && !statsHistory.find(h => h.tempo === Math.floor(tempo))) { updateChart(); }
     }
     function updateWorldState() {
         dayNightTimer += (0.1 * currentSpeedMultiplier);
         if (dayNightTimer > 60) { dayNightTimer = 0; isNight = !isNight; world.classList.toggle('world-night', isNight); }
-        if (weatherTimer > 0) {
-            weatherTimer -= (0.1 * currentSpeedMultiplier);
-        } else {
-            if (currentEvent !== 'nenhum') {
-                adicionarLog(`O evento de ${currentEvent} terminou.`);
-                world.classList.remove(`world-${currentEvent}`);
-                currentEvent = 'nenhum';
-            }
-            if (Math.random() < 0.005 * currentSpeedMultiplier) {
-                const eventoSorteado = Math.random() > 0.5 ? 'chuva' : 'nevasca';
-                triggerWeatherEvent(eventoSorteado);
-            }
+        if (weatherTimer > 0) { weatherTimer -= (0.1 * currentSpeedMultiplier); }
+        else if (currentEvent !== 'nenhum') {
+            adicionarLog(`O evento de ${currentEvent} terminou.`);
+            world.classList.remove(`world-event`);
+            particleContainer.innerHTML = ''; currentEvent = 'nenhum';
+        } else if (Math.random() < 0.005 * currentSpeedMultiplier) {
+            triggerWeatherEvent(Math.random() > 0.5 ? 'chuva' : 'nevasca');
         }
     }
     function triggerWeatherEvent(evento) {
-        if (weatherTimer > 0) return;
-        currentEvent = evento;
-        weatherTimer = 20 + Math.random() * 20; // Duração do evento
-        world.classList.add(`world-${evento}`);
+        if (weatherTimer > 0) return; currentEvent = evento;
+        weatherTimer = 20 + Math.random() * 20;
+        world.classList.add(`world-event`);
         adicionarLog(`Um evento de ${evento} começou!`);
-        if (evento === 'chuva') {
-            aguas.forEach(a => a.refill());
+        criarParticulas(evento, 50);
+        if (evento === 'chuva') aguas.forEach(a => a.refill());
+    }
+    function criarParticulas(tipo, quantidade) {
+        for (let i = 0; i < quantidade; i++) {
+            const p = document.createElement('div');
+            p.className = `particula ${tipo}`;
+            p.style.left = `${Math.random() * 100}%`;
+            p.style.animationDuration = `${1 + Math.random() * 1}s`;
+            p.style.animationDelay = `${Math.random() * 2}s`;
+            particleContainer.appendChild(p);
         }
     }
     function setGameSpeed(m) {
-        clearInterval(gameInterval);
-        currentSpeedMultiplier = m;
-        if (m > 0) {
-            simulaçãoAtiva = true;
-            gameInterval = setInterval(gameLoop, 100 / m);
-        } else {
-            simulaçãoAtiva = false;
-        }
-        document.querySelectorAll('.btn-time').forEach(b => {
-            b.classList.toggle('active', parseFloat(b.dataset.speed) === m);
-        });
+        clearInterval(gameInterval); currentSpeedMultiplier = m;
+        if (m > 0) { simulaçãoAtiva = true; gameInterval = setInterval(gameLoop, 100 / m); } else { simulaçãoAtiva = false; }
+        document.querySelectorAll('.btn-time').forEach(b => { b.classList.toggle('active', parseFloat(b.dataset.speed) === m); });
     }
-    function finalizarSimulacao(m) {
-        clearInterval(gameInterval);
-        simulaçãoAtiva = false;
-        if (m === 'extinção') {
-            const msg = `A simulação terminou! A vida foi extinta em ${tempo.toFixed(1)} segundos.`;
-            adicionarLog(msg);
-            alert(msg);
-        }
-    }
-    function resetar() {
-        finalizarSimulacao('reset');
-        modoDeColocarPedra = false;
-        btnColocarPedra.classList.remove('active');
-        world.classList.remove('placing-mode');
-        Telas.mostrar('menu');
-    }
+    function finalizarSimulacao(m) { clearInterval(gameInterval); simulaçãoAtiva = false; if (m === 'extinção') { const msg = `A simulação terminou! A vida foi extinta em ${tempo.toFixed(1)} segundos.`; adicionarLog(msg); alert(msg); } }
+    function resetar() { finalizarSimulacao('reset'); modoDeColocarPedra = false; btnColocarPedra.classList.remove('active'); world.classList.remove('placing-mode'); Telas.mostrar('menu'); }
     function adicionarAnimal(t) { animais.push(new Animal(t)); }
-    function adicionarComidaAleatoria() {
-        if(animais.length === 0) return;
-        const tiposComida = Object.keys(DEFINICOES_COMIDAS);
-        const tipoAleatorio = tiposComida[Math.floor(Math.random() * tiposComida.length)];
-        comidas.push(new Comida(tipoAleatorio));
-    }
+    function adicionarComidaAleatoria() { if (animais.length === 0) return; const tC = Object.keys(DEFINICOES_COMIDAS)[Math.floor(Math.random() * Object.keys(DEFINICOES_COMIDAS).length)]; comidas.push(new Comida(tC)); }
     function toggleModoPedra() { modoDeColocarPedra = !modoDeColocarPedra; btnColocarPedra.classList.toggle('active', modoDeColocarPedra); world.classList.toggle('placing-mode', modoDeColocarPedra); }
 
-    // === LOG & GRÁFICOS ===
-    function adicionarLog(mensagem) {
-        const timestamp = tempo.toFixed(1);
-        const logEntry = document.createElement('div');
-        logEntry.innerHTML = `<span>[${timestamp}s]</span> ${mensagem}`;
-        logContainer.prepend(logEntry);
-        logMessages.unshift(`[${timestamp}s] ${mensagem}`);
-        if (logMessages.length > 50) {
-            logMessages.pop();
-            logContainer.lastChild.remove();
-        }
-    }
-    function setupChart() {
-        if(populationChart) populationChart.destroy();
-        const animalTypes = Object.keys(DEFINICOES_ANIMAIS);
-        const datasets = animalTypes.map(tipo => {
-            const color = tipo === 'rato' ? 'rgba(136, 136, 136, 0.8)' : 'rgba(212, 163, 115, 0.8)';
-            const borderColor = tipo === 'rato' ? 'rgba(136, 136, 136, 1)' : 'rgba(212, 163, 115, 1)';
-            return {
-                label: DEFINICOES_ANIMAIS[tipo].nome,
-                data: [],
-                borderColor: borderColor,
-                backgroundColor: color,
-                tension: 0.1
-            };
-        });
-        populationChart = new Chart(populationChartCtx, {
-            type: 'line',
-            data: { labels: [], datasets: datasets },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true, title: { display: true, text: 'População' } }, x: { title: { display: true, text: 'Tempo (s)' } } },
-                plugins: { legend: { position: 'top' } }
-            }
-        });
-    }
-    function updateChart() {
-        const t = Math.floor(tempo);
-        statsHistory.push({
-            tempo: t,
-            counts: Object.keys(DEFINICOES_ANIMAIS).reduce((acc, tipo) => {
-                acc[tipo] = animais.filter(a => a.tipo === tipo).length;
-                return acc;
-            }, {})
-        });
-        populationChart.data.labels = statsHistory.map(h => h.tempo);
-        populationChart.data.datasets.forEach(dataset => {
-            const tipo = Object.keys(DEFINICOES_ANIMAIS).find(k => DEFINICOES_ANIMAIS[k].nome === dataset.label);
-            dataset.data = statsHistory.map(h => h.counts[tipo]);
-        });
-        populationChart.update();
-    }
+    // === LOG & GRÁFICOS (Sem alterações) ===
+    function adicionarLog(mensagem) { const timestamp = tempo.toFixed(1); const logEntry = document.createElement('div'); logEntry.innerHTML = `<span>[${timestamp}s]</span> ${mensagem}`; logContainer.prepend(logEntry); logMessages.unshift(`[${timestamp}s] ${mensagem}`); if (logMessages.length > 50) { logMessages.pop(); logContainer.lastChild.remove(); } }
+    function setupChart() { if(populationChart) populationChart.destroy(); const animalTypes = Object.keys(DEFINICOES_ANIMAIS); const datasets = animalTypes.map(tipo => { const color = tipo === 'rato' ? 'rgba(136, 136, 136, 0.8)' : 'rgba(212, 163, 115, 0.8)'; const borderColor = tipo === 'rato' ? 'rgba(136, 136, 136, 1)' : 'rgba(212, 163, 115, 1)'; return { label: DEFINICOES_ANIMAIS[tipo].nome, data: [], borderColor: borderColor, backgroundColor: color, tension: 0.1 }; }); populationChart = new Chart(populationChartCtx, { type: 'line', data: { labels: [], datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'População' } }, x: { title: { display: true, text: 'Tempo (s)' } } }, plugins: { legend: { position: 'top' } } } }); }
+    function updateChart() { const t = Math.floor(tempo); statsHistory.push({ tempo: t, counts: Object.keys(DEFINICOES_ANIMAIS).reduce((acc, tipo) => { acc[tipo] = animais.filter(a => a.tipo === tipo).length; return acc; }, {}) }); populationChart.data.labels = statsHistory.map(h => h.tempo); populationChart.data.datasets.forEach(dataset => { const tipo = Object.keys(DEFINICOES_ANIMAIS).find(k => DEFINICOES_ANIMAIS[k].nome === dataset.label); dataset.data = statsHistory.map(h => h.counts[tipo]); }); populationChart.update(); }
 
-
-    // === EVENT LISTENERS ===
+    // === EVENT LISTENERS & INTERAÇÃO (Sem alterações) ===
     btnNovaSimulacao.addEventListener('click', () => Telas.mostrar('setup'));
     btnVoltarMenu.addEventListener('click', () => Telas.mostrar('menu'));
     iniciarSimulacaoBtn.addEventListener('click', iniciar);
@@ -376,61 +291,12 @@ document.addEventListener('DOMContentLoaded', () => {
     btnAddCoelho.addEventListener('click', () => adicionarAnimal('coelho'));
     btnColocarPedra.addEventListener('click', toggleModoPedra);
     timeControlButtons.forEach(b => { b.addEventListener('click', () => { setGameSpeed(parseFloat(b.dataset.speed)); }); });
-
-    // === LÓGICA DE INTERAÇÃO (Arrastar e Clicar) ===
     function getEventPosition(e) { return e.touches && e.touches.length > 0 ? e.touches[0] : e; }
-    function handleInteractionStart(e) {
-        if (modoDeColocarPedra) {
-            if (e.target === world || e.target.id === 'world-overlay') {
-                const rect = world.getBoundingClientRect();
-                const pos = getEventPosition(e);
-                obstaculos.push(new Obstaculo(pos.clientX - rect.left, pos.clientY - rect.top));
-            }
-            return;
-        }
-        if (e.target.entidade instanceof Animal) {
-            e.preventDefault();
-            objetoInteragido = e.target.entidade;
-            isDragging = false;
-            const pos = getEventPosition(e);
-            startX = pos.clientX;
-            startY = pos.clientY;
-        }
-    }
-    function handleInteractionMove(e) {
-        if (!objetoInteragido) return;
-        e.preventDefault();
-        const pos = getEventPosition(e);
-        const dX = Math.abs(pos.clientX - startX);
-        const dY = Math.abs(pos.clientY - startY);
-        if (dX > 5 || dY > 5) { isDragging = true; }
-        if (isDragging) {
-            if (!objetoInteragido.element.classList.contains('dragging')) {
-                objetoInteragido.element.classList.add('dragging');
-            }
-            const rect = world.getBoundingClientRect();
-            objetoInteragido.x = pos.clientX - rect.left - (objetoInteragido.width / 2);
-            objetoInteragido.y = pos.clientY - rect.top - (objetoInteragido.height / 2);
-            objetoInteragido.element.style.left = `${objetoInteragido.x}px`;
-            objetoInteragido.element.style.top = `${objetoInteragido.y}px`;
-        }
-    }
-    function handleInteractionEnd(e) {
-        if (!objetoInteragido) return;
-        if (!isDragging) { objetoInteragido.toggleStatusBubble(); }
-        objetoInteragido.element.classList.remove('dragging');
-        objetoInteragido = null;
-        isDragging = false;
-    }
-
-    world.addEventListener('mousedown', handleInteractionStart);
-    world.addEventListener('touchstart', handleInteractionStart, { passive: false });
-    window.addEventListener('mousemove', handleInteractionMove);
-    window.addEventListener('touchmove', handleInteractionMove, { passive: false });
-    window.addEventListener('mouseup', handleInteractionEnd);
-    window.addEventListener('touchend', handleInteractionEnd);
-
-    // === INICIALIZAÇÃO DO JOGO ===
-    popularSetup();
-    Telas.mostrar('menu');
+    function handleInteractionStart(e) { if (modoDeColocarPedra) { if (e.target === world || e.target.id === 'world-overlay') { const rect = world.getBoundingClientRect(); const pos = getEventPosition(e); obstaculos.push(new Obstaculo(pos.clientX - rect.left, pos.clientY - rect.top)); } return; } if (e.target.entidade instanceof Animal) { e.preventDefault(); objetoInteragido = e.target.entidade; isDragging = false; const pos = getEventPosition(e); startX = pos.clientX; startY = pos.clientY; } }
+    function handleInteractionMove(e) { if (!objetoInteragido) return; e.preventDefault(); const pos = getEventPosition(e); const dX = Math.abs(pos.clientX - startX); const dY = Math.abs(pos.clientY - startY); if (dX > 5 || dY > 5) { isDragging = true; } if (isDragging) { if (!objetoInteragido.element.classList.contains('dragging')) { objetoInteragido.element.classList.add('dragging'); } const rect = world.getBoundingClientRect(); objetoInteragido.x = pos.clientX - rect.left - (objetoInteragido.width / 2); objetoInteragido.y = pos.clientY - rect.top - (objetoInteragido.height / 2); objetoInteragido.element.style.left = `${objetoInteragido.x}px`; objetoInteragido.element.style.top = `${objetoInteragido.y}px`; } }
+    function handleInteractionEnd(e) { if (!objetoInteragido) return; if (!isDragging) { objetoInteragido.toggleStatusBubble(); } objetoInteragido.element.classList.remove('dragging'); objetoInteragido = null; isDragging = false; }
+    world.addEventListener('mousedown', handleInteractionStart); world.addEventListener('touchstart', handleInteractionStart, { passive: false });
+    window.addEventListener('mousemove', handleInteractionMove); window.addEventListener('touchmove', handleInteractionMove, { passive: false });
+    window.addEventListener('mouseup', handleInteractionEnd); window.addEventListener('touchend', handleInteractionEnd);
+    popularSetup(); Telas.mostrar('menu');
 });
