@@ -188,6 +188,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 alvo: null, estado: 'Vagando', abrigo: null, frio: 0, oQueCome: DEFINICOES_ANIMAIS[tipo].come,
                 tribo: null, triboInimiga: null, alvoDeAtaque: null
             });
+
+            // MODIFICAÇÃO: Aumentar a longevidade dos ratos
+            if (this.tipo === 'rato') {
+                this.maxAge = 200 + Math.random() * 50; // Ratos vivem consideravelmente mais
+            }
+
             this.element.classList.add('filhote');
             this.healthBarContainer = document.createElement('div'); this.healthBarContainer.className = 'health-bar-container';
             this.healthBarFill = document.createElement('div'); this.healthBarFill.className = 'health-bar-fill';
@@ -200,6 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             this.age += 0.05; this.fome += 0.2; this.sede += (scenarioSelect.value === 'deserto' ? 0.3 : 0.25);
             if (this.isMature) this.reproductionUrge += 0.3;
+            if (this.isGestating) this.gestationTimer--;
+            if (this.gestationTimer <= 0 && this.isGestating) this.darALuz();
             if (currentEvent === 'nevasca' && !this.estaNoAbrigo()) this.frio += 0.4; else this.frio = Math.max(0, this.frio - 0.2);
             if (this.fome >= 100 || this.sede >= 100 || this.age >= this.maxAge || this.frio >= 100) { this.morrer(); return; }
             if (!this.isMature && this.age > 20) { this.isMature = true; this.element.classList.remove('filhote'); }
@@ -265,10 +273,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const podeConstruirAbrigo = ['floresta', 'deserto'].includes(scenarioSelect.value);
             if (podeConstruirAbrigo && !this.abrigo && this.isMature && this.fome < 30 && this.sede < 30) { this.estado = "Construindo abrigo"; this.alvo = { x: this.x, y: this.y, construindo: true }; return; }
-            if (this.isMature && this.gender === 'female' && this.reproductionUrge > 70 && this.fome < 40 && this.sede < 40) {
+            
+            // MODIFICAÇÃO: Facilitar a procriação dos ratos
+            const reproductionThreshold = (this.tipo === 'rato') ? 50 : 70;
+            if (this.isMature && this.gender === 'female' && !this.isGestating && this.reproductionUrge > reproductionThreshold && this.fome < 40 && this.sede < 40) {
                 const p = this.encontrarMaisProximo(animais.filter(a => a.tipo === this.tipo && a.isMature && a.gender === 'male' && !a.isGestating));
                 if (p) { this.estado = 'Procurando parceiro'; this.alvo = p; return; }
             }
+
             if (this.abrigo && this.abrigo.estoqueComida.length < this.abrigo.capacidadeEstoque && this.fome < 40) { this.estado = 'Estocando comida'; this.alvo = this.encontrarComida(); return; }
             if (this.estaNoAbrigo() && this.fome < 80 && this.sede < 80) { this.estado = 'Descansando no abrigo'; this.alvo = null; return; }
             
@@ -330,7 +342,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     break;
                 case 'Buscando Água': if (this.alvo instanceof Agua) { this.sede = Math.max(0, this.sede - 70); this.alvo.refill?.(); } break;
-                case 'Procurando parceiro': if (this.alvo instanceof Animal && this.alvo.isMature) { this.isGestating = true; this.gestationTimer = 150; this.reproductionUrge = 0; } break;
+                case 'Procurando parceiro': 
+                    if (this.alvo instanceof Animal && this.alvo.isMature) {
+                        this.isGestating = true;
+                        // MODIFICAÇÃO: Gestação mais rápida para ratos
+                        this.gestationTimer = (this.tipo === 'rato') ? 80 : 150; 
+                        this.reproductionUrge = 0;
+                    }
+                    break;
                 case 'Construindo abrigo':
                     this.abrigo = new Abrigo(this.x, this.y);
                     abrigos.push(this.abrigo);
@@ -359,7 +378,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         darALuz() {
             this.isGestating = false;
-            const n = Math.floor(Math.random() * 2) + 1;
+            // MODIFICAÇÃO: Ninhadas maiores para os ratos
+            const n = (this.tipo === 'rato') ? Math.floor(Math.random() * 3) + 2 : Math.floor(Math.random() * 2) + 1; // Ratos têm 2-4 filhotes
             for(let i=0; i<n; i++) {
                 const filhote = new Animal(this.tipo, this.x + (Math.random()*20-10), this.y + (Math.random()*20-10));
                 if (this.tribo) {
