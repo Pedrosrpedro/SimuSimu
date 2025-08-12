@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>SimuSimu - v1.3 Imperial</title>
+    <title>SimuSimu - v1.4 Estável</title>
     <link rel="stylesheet" href="style.css">
     <!-- Importação da biblioteca de gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -33,7 +33,7 @@
         <h3>Cenário e Recursos</h3>
         <div class="input-group"><label for="scenario">Cenário:</label><select id="scenario"><option value="floresta">Floresta</option><option value="aquario">Aquário</option><option value="deserto">Deserto</option></select></div>
         <div class="input-group"><label for="numComida">Comida Inicial:</label><input type="number" id="numComida" value="15" min="1" max="50"></div>
-        <div class.input-group"><label for="numAgua">Água Inicial:</label><input type="number" id="numAgua" value="5" min="1" max="20"></div>
+        <div class="input-group"><label for="numAgua">Água Inicial:</label><input type="number" id="numAgua" value="5" min="1" max="20"></div>
     </div>
     <div class="setup-section">
         <h3>Animais Iniciais</h3>
@@ -69,12 +69,25 @@
                     <div class="stat-item"><span>Tempo</span><span id="tempo">0s</span></div>
                 </div>
                 <div id="animal-counts"></div>
+                
                 <h3 class="panel-subtitle">Controle de Tempo</h3>
                  <div id="time-controls" class="btn-group">
                     <button class="btn-time" data-speed="0" title="Pausar"><i class="fa-solid fa-pause"></i></button>
-                    <button class="btn-time" data-speed="1" title="Velocidade Normal"><i class="fa-solid fa-play"></i></button>
+                    <!-- CORREÇÃO: Botão de câmera lenta adicionado de volta -->
+                    <button class="btn-time" data-speed="0.5" title="Câmera Lenta"><i class="fa-solid fa-backward-step"></i></button>
+                    <button class="btn-time active" data-speed="1" title="Velocidade Normal"><i class="fa-solid fa-play"></i></button>
                     <button class="btn-time" data-speed="2" title="2x Velocidade"><i class="fa-solid fa-forward"></i></button>
                     <button class="btn-time" data-speed="5" title="5x Velocidade"><i class="fa-solid fa-forward-fast"></i></button>
+                </div>
+                
+                <!-- CORREÇÃO: Botões de interação adicionados de volta -->
+                <h3 class="panel-subtitle">Ações Manuais</h3>
+                <div class="btn-group interaction-group">
+                    <button class="btn-interaction" id="btn-add-comida">Comida</button>
+                    <button class="btn-interaction" id="btn-add-rato">Rato</button>
+                    <button class="btn-interaction" id="btn-add-coelho">Coelho</button>
+                    <button class="btn-interaction" id="btn-colocar-pedra">Pedra</button>
+                    <button class="btn-interaction" id="btn-modo-territorio">Territórios</button>
                 </div>
             </div>
 
