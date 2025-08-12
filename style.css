@@ -53,8 +53,7 @@ button:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow:
 #world-viewport { width: 800px; height: 100%; border: 2px solid; position: relative; overflow: hidden; background-color: #fff; cursor: default; border-radius: 8px; touch-action: none; flex-shrink: 0; }
 .theme-dark #world-viewport { border-color: var(--border-dark); }
 .theme-light #world-viewport { border-color: var(--text-light); }
-/* CORREÇÃO: Garantir que o mundo preencha o viewport */
-#world { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; }
+#world { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; }
 
 /* --- PAINEL DE INFO, ABAS, LOG E GRÁFICOS --- */
 #info-panel { min-width: 350px; height: 100%; position: relative; padding: 0; display: flex; flex-direction: column; flex-grow: 1; }
@@ -112,8 +111,10 @@ button:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow:
 #inspect-frio { background: linear-gradient(90deg, #3498db, #f1c40f, #e74c3c); }
 
 /* --- EFEITOS DE MUNDO E ENTIDADES --- */
-#world-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; transition: background-color 2s ease-in-out; z-index: 50; border-radius: 8px;}
-.entity { position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center; transition: opacity 0.5s, transform 0.5s, visibility 0.3s; }
+.world-aquario { background-image: url('images/aquario_fundo.jpg'); }
+.world-floresta { background-image: url('images/floresta_fundo.jpg'); }
+.world-deserto { background-image: url('images/deserto_fundo.jpg'); }
+.entity { position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center; }
 .animal { z-index: 10; cursor: grab; position: relative; }
 .animal.dragging { z-index: 100; cursor: grabbing; transform: scale(1.1); filter: drop-shadow(0 0 10px var(--accent-dark)); }
 .rato { width: 40px; height: 40px; background-image: url('images/rato.png'); }
@@ -124,8 +125,7 @@ button:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow:
 .agua { width: 60px; height: 60px; background-image: url('images/bebedouro.png'); z-index: 5; }
 .pedra { width: 70px; height: 70px; background-image: url('images/pedra.png'); z-index: 20; }
 .abrigo { width: 80px; height: 80px; background-image: url('images/abrigo.png'); z-index: 6; }
-/* CORREÇÃO: Contador de comida do abrigo */
-.abrigo::after { content: 'x' counter(food); position: absolute; top: -5px; right: -5px; background: #c0392b; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; counter-reset: food var(--food-count, 0); border: 2px solid white; display: var(--food-display, none); }
+.abrigo::after { content: var(--food-count, '0'); position: absolute; top: -5px; right: -5px; background: #c0392b; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; border: 2px solid white; display: var(--food-display, none); }
 .carcaca { width: 40px; height: 40px; background-image: url('images/carcaca.png'); z-index: 1; transition: opacity 2s linear; }
 .territorio-visual { position: absolute; border-radius: 50%; border: 3px dashed; z-index: 0; pointer-events: none; transition: all 0.5s; opacity: 0.6; display: none; }
 .territorio-visual.active { display: block; }
