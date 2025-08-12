@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // === ELEMENTOS DO DOM ===
+    const worldViewport = document.getElementById('world-viewport');
     const world = document.getElementById('world');
     const animalSelectionDiv = document.getElementById('animal-selection');
     const populacaoTotalSpan = document.getElementById('populacaoTotal');
@@ -48,13 +49,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let animais = [], comidas = [], aguas = [], obstaculos = [], abrigos = [];
     let tribos = [], carcacas = [];
     let simulaçãoAtiva = false, tempo = 0, modoDeColocarPedra = false, modoTerritorio = false;
-    const WORLD_WIDTH = 800, WORLD_HEIGHT = 600, HEALTH_BAR_THRESHOLD = 15;
+    const MAP_WIDTH = 2400, MAP_HEIGHT = 1800, HEALTH_BAR_THRESHOLD = 15; // Tamanho do mapa aumentado
     let gameInterval, currentSpeedMultiplier = 1, dayNightTimer = 0, isNight = false;
     let weatherTimer = 0, currentEvent = 'nenhum';
     let populationChart, logMessages = [], statsHistory = [];
 
-    // === VARIÁVEIS DE INTERAÇÃO ===
-    let objetoInteragido = null, isDragging = false, startX, startY;
+    // === VARIÁVEIS DE INTERAÇÃO E CÂMERA ===
+    let objetoInteragido = null, isDragging = false, isPanning = false;
+    let camera = { x: 0, y: 0, zoom: 0.5 };
+    const MIN_ZOOM = 0.4, MAX_ZOOM = 2.5;
+    let panStart = { x: 0, y: 0 };
+    let lastPinchDist = 0;
+
 
     // === LÓGICA DE CLASSES ===
 
@@ -78,7 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
             this.atualizarVisual();
         }
         adicionarMembro(animal) {
-            if (!this.membros.includes(animal) && animal.tipo === this.membros[0]?.tipo) {
+            // Garante que a tribo não está vazia antes de checar o tipo
+            if (!this.membros.includes(animal) && (this.membros.length === 0 || animal.tipo === this.membros[0]?.tipo)) {
                 this.membros.push(animal);
                 animal.tribo = this;
                 animal.element.style.setProperty('--cor-tribo', this.cor);
@@ -118,8 +125,9 @@ document.addEventListener('DOMContentLoaded', () => {
         constructor(x, y, classeCss) {
             this.element = document.createElement('div');
             this.element.className = `entity ${classeCss}`;
-            this.x = x ?? Math.random() * (WORLD_WIDTH - 50);
-            this.y = y ?? Math.random() * (WORLD_HEIGHT - 50);
+            // Posiciona entidades aleatoriamente dentro do novo mapa maior
+            this.x = x ?? Math.random() * (MAP_WIDTH - 50);
+            this.y = y ?? Math.random() * (MAP_HEIGHT - 50);
             this.element.style.left = `${this.x}px`;
             this.element.style.top = `${this.y}px`;
             world.appendChild(this.element);
@@ -221,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             this.element.style.left = `${this.x}px`;
             this.element.style.top = `${this.y}px`;
-            this.element.style.opacity = Math.max(0.3, (100 - Math.max(this.fome, this.sede, this.frio)) / 100);
+            // REMOVIDA A LINHA DE OPACIDADE PARA OS ANIMAIS FICAREM SEMPRE VISÍVEIS
             this.atualizarUI();
         }
         estaNoAbrigo() { if (!this.abrigo) return false; return Math.hypot(this.x - this.abrigo.x, this.y - this.abrigo.y) < 15; }
@@ -268,10 +276,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.estado = 'Buscando Comida'; this.alvo = this.encontrarComida(); return;
             }
 
-            // NOVA LÓGICA: Chance de entrar pacificamente em uma tribo
+            // LÓGICA ALTERADA: Chance aumentada para entrar pacificamente em uma tribo
             if (!this.tribo && this.isMature && this.fome < 40 && this.sede < 40) {
                 const triboProxima = this.encontrarTriboNoLocal();
-                if (triboProxima && triboProxima.membros[0]?.tipo === this.tipo && Math.random() < 0.02) {
+                // Aumentado de 0.02 para 0.25 (de 2% para 25% de chance por ciclo)
+                if (triboProxima && triboProxima.membros.length > 0 && triboProxima.membros[0]?.tipo === this.tipo && Math.random() < 0.25) {
                      triboProxima.adicionarMembro(this);
                      adicionarLog(`Um ${this.tipo} juntou-se pacificamente a uma tribo.`);
                      this.estado = 'Vagando';
@@ -386,8 +395,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 alvoX = this.tribo.abrigo.x + (Math.random() - 0.5) * this.tribo.territorioRaio * 2;
                 alvoY = this.tribo.abrigo.y + (Math.random() - 0.5) * this.tribo.territorioRaio * 2;
             } else {
-                alvoX = Math.random() * WORLD_WIDTH;
-                alvoY = Math.random() * WORLD_HEIGHT;
+                alvoX = Math.random() * MAP_WIDTH;
+                alvoY = Math.random() * MAP_HEIGHT;
             }
             if (!this.vagarAlvo || Math.random() < 0.05) { this.vagarAlvo = { x: alvoX, y: alvoY }; }
             const dx = this.vagarAlvo.x - this.x, dy = this.vagarAlvo.y - this.y, d = Math.hypot(dx, dy);
@@ -427,17 +436,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === FUNÇÕES DE CONTROLE DA SIMULAÇÃO ===
     function popularSetup() { animalSelectionDiv.innerHTML = ''; for (const [t, d] of Object.entries(DEFINICOES_ANIMAIS)) { const g = document.createElement('div'); g.className = 'animal-input-group'; g.innerHTML = `<label for="num-${t}">${d.nome}:</label><input type="number" id="num-${t}" data-tipo="${t}" value="2" min="0" max="20">`; animalSelectionDiv.appendChild(g); } }
+    
     function iniciar() {
         world.innerHTML = '<div id="world-overlay"></div><div id="particle-container"></div>';
         particleContainer = document.getElementById('particle-container');
         
+        // Configura o tamanho do mundo
+        world.style.width = `${MAP_WIDTH}px`;
+        world.style.height = `${MAP_HEIGHT}px`;
+        
+        // Centraliza a câmera e aplica zoom inicial
+        camera = {
+            x: (worldViewport.clientWidth - MAP_WIDTH * 0.5) / 2,
+            y: (worldViewport.clientHeight - MAP_HEIGHT * 0.5) / 2,
+            zoom: 0.5
+        };
+        updateWorldTransform();
+
         tribos.forEach(t => t.dissolver());
         [...animais, ...comidas, ...aguas, ...obstaculos, ...abrigos, ...carcacas].forEach(e => e.remover());
 
         animais = []; comidas = []; aguas = []; obstaculos = []; abrigos = []; tribos = []; carcacas = [];
         tempo = 0; statsHistory = []; logMessages = []; logContainer.innerHTML = ''; currentEvent = 'nenhum';
         
-        world.className = `world-${scenarioSelect.value}`;
+        world.className = `world world-${scenarioSelect.value}`;
         for(let i=0; i<parseInt(numAguaInput.value); i++) aguas.push(new Agua());
         const tiposSel = Array.from(animalSelectionDiv.querySelectorAll('input')).filter(i => parseInt(i.value) > 0).map(i => i.dataset.tipo);
         if (tiposSel.length > 0) { for (let i = 0; i < parseInt(numComidaInput.value); i++) { const tC = DEFINICOES_ANIMAIS[tiposSel[Math.floor(Math.random() * tiposSel.length)]].come[0]; comidas.push(new Comida(tC)); } }
@@ -445,6 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         setupChart(); setGameSpeed(1); Telas.mostrar('game'); adicionarLog("A simulação começou!");
     }
+
     function gameLoop() {
         if (!simulaçãoAtiva) return;
         tempo += 0.1 * currentSpeedMultiplier;
@@ -460,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        world.classList.toggle('hide-health-bars', animais.length > HEALTH_BAR_THRESHOLD);
+        worldViewport.classList.toggle('hide-health-bars', animais.length > HEALTH_BAR_THRESHOLD);
         populacaoTotalSpan.textContent = animais.length;
         tempoSpan.textContent = tempo.toFixed(1);
         const c = {}; animais.forEach(a => c[a.tipo] = (c[a.tipo] || 0) + 1);
@@ -511,7 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
             p.style.setProperty('--tx', `${(Math.random() - 0.5) * 60}px`);
             p.style.setProperty('--ty', `${(Math.random() - 0.5) * 60}px`);
             particleContainer.appendChild(p);
-            setTimeout(() => p.remove(), 500); // Remove a partícula após a animação
+            setTimeout(() => p.remove(), 500);
         }
     }
     function setGameSpeed(m) {
@@ -538,12 +561,12 @@ document.addEventListener('DOMContentLoaded', () => {
         finalizarSimulacao('reset');
         modoDeColocarPedra = false;
         btnColocarPedra.classList.remove('active');
-        world.classList.remove('placing-mode');
+        worldViewport.classList.remove('placing-mode');
         Telas.mostrar('menu');
     }
     function adicionarAnimal(t) { animais.push(new Animal(t)); }
     function adicionarComidaAleatoria() { if (animais.length === 0) return; const tC = Object.keys(DEFINICOES_COMIDAS)[Math.floor(Math.random() * Object.keys(DEFINICOES_COMIDAS).length)]; comidas.push(new Comida(tC)); }
-    function toggleModoPedra() { modoDeColocarPedra = !modoDeColocarPedra; btnColocarPedra.classList.toggle('active', modoDeColocarPedra); world.classList.toggle('placing-mode', modoDeColocarPedra); }
+    function toggleModoPedra() { modoDeColocarPedra = !modoDeColocarPedra; btnColocarPedra.classList.toggle('active', modoDeColocarPedra); worldViewport.classList.toggle('placing-mode', modoDeColocarPedra); }
     function toggleModoTerritorio() {
         modoTerritorio = !modoTerritorio;
         btnModoTerritorio.classList.toggle('active', modoTerritorio);
@@ -564,7 +587,29 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupChart() { if(populationChart) populationChart.destroy(); const animalTypes = Object.keys(DEFINICOES_ANIMAIS); const datasets = animalTypes.map(tipo => { const color = tipo === 'rato' ? 'rgba(136, 136, 136, 0.8)' : 'rgba(212, 163, 115, 0.8)'; const borderColor = tipo === 'rato' ? 'rgba(136, 136, 136, 1)' : 'rgba(212, 163, 115, 1)'; return { label: DEFINICOES_ANIMAIS[tipo].nome, data: [], borderColor: borderColor, backgroundColor: color, tension: 0.1 }; }); populationChart = new Chart(populationChartCtx, { type: 'line', data: { labels: [], datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'População' } }, x: { title: { display: true, text: 'Tempo (s)' } } }, plugins: { legend: { position: 'top' } } } }); }
     function updateChart() { const t = Math.floor(tempo); statsHistory.push({ tempo: t, counts: Object.keys(DEFINICOES_ANIMAIS).reduce((acc, tipo) => { acc[tipo] = animais.filter(a => a.tipo === tipo).length; return acc; }, {}) }); populationChart.data.labels = statsHistory.map(h => h.tempo); populationChart.data.datasets.forEach(dataset => { const tipo = Object.keys(DEFINICOES_ANIMAIS).find(k => DEFINICOES_ANIMAIS[k].nome === dataset.label); dataset.data = statsHistory.map(h => h.counts[tipo]); }); populationChart.update(); }
 
-    // === EVENT LISTENERS & INTERAÇÃO ===
+    // === NOVAS FUNÇÕES DE CÂMERA E INTERAÇÃO ===
+    function updateWorldTransform() {
+        // Limita a posição da câmera para não sair do mapa
+        const max_x = 0;
+        const min_x = worldViewport.clientWidth - MAP_WIDTH * camera.zoom;
+        const max_y = 0;
+        const min_y = worldViewport.clientHeight - MAP_HEIGHT * camera.zoom;
+
+        camera.x = Math.max(min_x, Math.min(max_x, camera.x));
+        camera.y = Math.max(min_y, Math.min(max_y, camera.y));
+
+        world.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`;
+    }
+
+    function screenToWorldCoords(e) {
+        const pos = getEventPosition(e);
+        const rect = worldViewport.getBoundingClientRect();
+        const worldX = (pos.clientX - rect.left - camera.x) / camera.zoom;
+        const worldY = (pos.clientY - rect.top - camera.y) / camera.zoom;
+        return { x: worldX, y: worldY };
+    }
+
+    // === EVENT LISTENERS & INTERAÇÃO (ATUALIZADOS) ===
     btnNovaSimulacao.addEventListener('click', () => Telas.mostrar('setup'));
     btnVoltarMenu.addEventListener('click', () => Telas.mostrar('menu'));
     iniciarSimulacaoBtn.addEventListener('click', iniciar);
@@ -576,14 +621,114 @@ document.addEventListener('DOMContentLoaded', () => {
     btnModoTerritorio.addEventListener('click', toggleModoTerritorio);
     btnFullscreen.addEventListener('click', toggleFullScreen);
     timeControlButtons.forEach(b => { b.addEventListener('click', () => { setGameSpeed(parseFloat(b.dataset.speed)); }); });
-    function getEventPosition(e) { return e.touches && e.touches.length > 0 ? e.touches[0] : e; }
-    function handleInteractionStart(e) { if (modoDeColocarPedra) { if (e.target === world || e.target.id === 'world-overlay') { const rect = world.getBoundingClientRect(); const pos = getEventPosition(e); obstaculos.push(new Obstaculo(pos.clientX - rect.left, pos.clientY - rect.top)); } return; } if (e.target.entidade instanceof Animal) { e.preventDefault(); objetoInteragido = e.target.entidade; isDragging = false; const pos = getEventPosition(e); startX = pos.clientX; startY = pos.clientY; } }
-    function handleInteractionMove(e) { if (!objetoInteragido) return; e.preventDefault(); const pos = getEventPosition(e); const dX = Math.abs(pos.clientX - startX); const dY = Math.abs(pos.clientY - startY); if (dX > 5 || dY > 5) { isDragging = true; } if (isDragging) { if (!objetoInteragido.element.classList.contains('dragging')) { objetoInteragido.element.classList.add('dragging'); } const rect = world.getBoundingClientRect(); objetoInteragido.x = pos.clientX - rect.left - (objetoInteragido.width / 2); objetoInteragido.y = pos.clientY - rect.top - (objetoInteragido.height / 2); objetoInteragido.element.style.left = `${objetoInteragido.x}px`; objetoInteragido.element.style.top = `${objetoInteragido.y}px`; } }
-    function handleInteractionEnd(e) { if (!objetoInteragido) return; if (!isDragging) { objetoInteragido.toggleStatusBubble(); } objetoInteragido.element.classList.remove('dragging'); objetoInteragido = null; isDragging = false; }
-    world.addEventListener('mousedown', handleInteractionStart); world.addEventListener('touchstart', handleInteractionStart, { passive: false });
-    window.addEventListener('mousemove', handleInteractionMove); window.addEventListener('touchmove', handleInteractionMove, { passive: false });
-    window.addEventListener('mouseup', handleInteractionEnd); window.addEventListener('touchend', handleInteractionEnd);
     
+    function getEventPosition(e) { return e.touches && e.touches.length > 0 ? e.touches[0] : e; }
+    
+    function handleInteractionStart(e) {
+        if (e.type === 'touchstart') e.preventDefault();
+        
+        if (modoDeColocarPedra) {
+            if (e.target === world || e.target.id === 'world-overlay' || e.target.id === 'world-viewport') {
+                const coords = screenToWorldCoords(e);
+                obstaculos.push(new Obstaculo(coords.x, coords.y));
+            }
+            return;
+        }
+        
+        const touches = e.touches;
+        if (touches && touches.length === 2) {
+            isPanning = false; isDragging = false;
+            lastPinchDist = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+        } else if (e.target.entidade instanceof Animal) {
+            objetoInteragido = e.target.entidade;
+            isDragging = false;
+            const pos = getEventPosition(e);
+            panStart.x = pos.clientX; panStart.y = pos.clientY;
+        } else {
+            isPanning = true;
+            const pos = getEventPosition(e);
+            panStart.x = pos.clientX - camera.x;
+            panStart.y = pos.clientY - camera.y;
+        }
+    }
+
+    function handleInteractionMove(e) {
+        if (e.type === 'touchmove') e.preventDefault();
+
+        const touches = e.touches;
+        if (touches && touches.length === 2) {
+            // Lógica de Zoom (Pinch)
+            const newPinchDist = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+            const pinchRatio = newPinchDist / lastPinchDist;
+            lastPinchDist = newPinchDist;
+            
+            const pinchCenterX = (touches[0].clientX + touches[1].clientX) / 2;
+            const pinchCenterY = (touches[0].clientY + touches[1].clientY) / 2;
+            const rect = worldViewport.getBoundingClientRect();
+            const worldX = (pinchCenterX - rect.left - camera.x) / camera.zoom;
+            const worldY = (pinchCenterY - rect.top - camera.y) / camera.zoom;
+            
+            const oldZoom = camera.zoom;
+            camera.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, camera.zoom * pinchRatio));
+            
+            camera.x += (worldX * oldZoom) - (worldX * camera.zoom);
+            camera.y += (worldY * oldZoom) - (worldY * camera.zoom);
+            updateWorldTransform();
+        } else if (isPanning) {
+            const pos = getEventPosition(e);
+            camera.x = pos.clientX - panStart.x;
+            camera.y = pos.clientY - panStart.y;
+            updateWorldTransform();
+        } else if (objetoInteragido) {
+            const pos = getEventPosition(e);
+            const dX = Math.abs(pos.clientX - panStart.x), dY = Math.abs(pos.clientY - panStart.y);
+
+            if (dX > 5 || dY > 5 || isDragging) {
+                isDragging = true;
+                if (!objetoInteragido.element.classList.contains('dragging')) objetoInteragido.element.classList.add('dragging');
+                const coords = screenToWorldCoords(e);
+                objetoInteragido.x = coords.x - (objetoInteragido.width / 2);
+                objetoInteragido.y = coords.y - (objetoInteragido.height / 2);
+                objetoInteragido.element.style.left = `${objetoInteragido.x}px`;
+                objetoInteragido.element.style.top = `${objetoInteragido.y}px`;
+            }
+        }
+    }
+
+    function handleInteractionEnd(e) {
+        if (!isDragging && !isPanning && !lastPinchDist && objetoInteragido) {
+            objetoInteragido.toggleStatusBubble();
+        }
+        if (objetoInteragido) objetoInteragido.element.classList.remove('dragging');
+        
+        objetoInteragido = null; isDragging = false; isPanning = false; lastPinchDist = 0;
+    }
+    
+    function handleWheelZoom(e) {
+        e.preventDefault();
+        const rect = worldViewport.getBoundingClientRect();
+        const worldX = (e.clientX - rect.left - camera.x) / camera.zoom;
+        const worldY = (e.clientY - rect.top - camera.y) / camera.zoom;
+        
+        const zoomIntensity = 0.1;
+        const delta = e.deltaY > 0 ? -1 : 1;
+        const oldZoom = camera.zoom;
+        camera.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, oldZoom + delta * zoomIntensity));
+        
+        camera.x += (worldX * oldZoom) - (worldX * camera.zoom);
+        camera.y += (worldY * oldZoom) - (worldY * camera.zoom);
+        updateWorldTransform();
+    }
+    
+    worldViewport.addEventListener('mousedown', handleInteractionStart);
+    worldViewport.addEventListener('touchstart', handleInteractionStart, { passive: false });
+    window.addEventListener('mousemove', handleInteractionMove);
+    window.addEventListener('touchmove', handleInteractionMove, { passive: false });
+    window.addEventListener('mouseup', handleInteractionEnd);
+    window.addEventListener('touchend', handleInteractionEnd);
+    worldViewport.addEventListener('wheel', handleWheelZoom, { passive: false });
+
     // === INICIALIZAÇÃO DO JOGO ===
-    popularSetup(); Telas.mostrar('menu');
+    popularSetup();
+    Telas.mostrar('menu');
 });
