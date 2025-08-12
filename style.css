@@ -1,60 +1,149 @@
-/* --- GERAL E FONTES --- */
-body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #2c3e50; color: #333; }
+/* --- CONFIGURAÇÃO GERAL E VARIÁVEIS DE COR --- */
+:root {
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    /* Cores do Tema Escuro (Padrão) */
+    --bg-dark: #1a202c;
+    --panel-bg-dark: #2d3748;
+    --text-dark: #e2e8f0;
+    --text-muted-dark: #a0aec0;
+    --border-dark: #4a5568;
+    --accent-dark: #4fd1c5;
+    --accent-hover-dark: #38b2ac;
+    /* Cores do Tema Claro */
+    --bg-light: #f0f2f5;
+    --panel-bg-light: #ffffff;
+    --text-light: #1a202c;
+    --text-muted-light: #718096;
+    --border-light: #e2e8f0;
+    --accent-light: #3182ce;
+    --accent-hover-light: #2b6cb0;
+}
+
+body {
+    font-family: var(--font-sans);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* --- ESTILOS DOS TEMAS --- */
+.theme-dark { background-color: var(--bg-dark); color: var(--text-dark); }
+.theme-light { background-color: var(--bg-light); color: var(--text-light); }
+
+/* --- PAINÉIS (Menu, Setup, Info) --- */
+.panel {
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    border: 1px solid transparent;
+}
+.theme-dark .panel { background-color: var(--panel-bg-dark); border-color: var(--border-dark); }
+.theme-light .panel { background-color: var(--panel-bg-light); border-color: var(--border-light); }
+
 .hidden { display: none !important; }
 
-/* --- MENU E SETUP --- */
-#main-menu-container, #setup-container { text-align: center; padding: 40px; background-color: white; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-#main-menu-container { width: 350px; }
-#setup-container { width: 500px; }
-.game-title { font-size: 48px; color: #2c3e50; margin: 0; }
-.game-subtitle { font-size: 16px; color: #7f8c8d; margin-bottom: 30px; }
-.setup-section { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #ecf0f1; }
+/* --- ELEMENTOS DE TEXTO --- */
+.game-title { font-size: 48px; margin: 0; font-weight: 700; }
+.theme-dark .game-title { color: #fff; }
+.theme-light .game-title { color: var(--text-light); }
+
+.game-subtitle, h1, h2, h3 { text-align: center; font-weight: 500; }
+.theme-dark .game-subtitle, .theme-dark h1, .theme-dark h2, .theme-dark h3 { color: var(--text-muted-dark); }
+.theme-light .game-subtitle, .theme-light h1, .theme-light h2, .theme-light h3 { color: var(--text-muted-light); }
+
+h1 { font-size: 24px; margin-bottom: 20px; }
+h2 { font-size: 20px; margin-bottom: 15px; }
+.panel-subtitle { font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid; margin-top: 20px; padding-bottom: 8px; }
+.theme-dark .panel-subtitle { border-color: var(--border-dark); }
+.theme-light .panel-subtitle { border-color: var(--border-light); }
+
+/* --- BOTÕES --- */
+button { display: block; width: 100%; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 15px; transition: all 0.2s ease; }
+button:hover { transform: translateY(-2px); filter: brightness(1.1); }
+button:active { transform: translateY(0); filter: brightness(1); }
+/* Botão primário */
+.theme-dark button { background-color: var(--accent-dark); color: #1a202c; }
+.theme-light button { background-color: var(--accent-light); color: #fff; }
+/* Outros tipos de botão */
+.btn-secondary { background-color: transparent; border: 1px solid; }
+.theme-dark .btn-secondary { color: var(--text-muted-dark); border-color: var(--border-dark); }
+.theme-light .btn-secondary { color: var(--text-muted-light); border-color: var(--border-light); }
+.btn-danger { background-color: #e53e3e; color: #fff; position: absolute; bottom: 20px; width: calc(100% - 80px); }
+.btn-disabled { filter: grayscale(0.8); cursor: not-allowed; opacity: 0.5; }
+
+/* --- CONTROLES DE SETUP --- */
+.setup-section { border-bottom: 1px solid; margin-bottom: 20px; padding-bottom: 20px; }
+.theme-dark .setup-section { border-color: var(--border-dark); }
+.theme-light .setup-section { border-color: var(--border-light); }
 .input-group { margin-bottom: 15px; text-align: left; }
-.input-group label { display: block; margin-bottom: 5px; }
-.input-group input, .input-group select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+.input-group label { display: block; margin-bottom: 8px; font-size: 14px; }
+.input-group input, .input-group select { width: 100%; padding: 10px; box-sizing: border-box; border-radius: 6px; border: 1px solid; }
+.theme-dark .input-group input, .theme-dark .input-group select { background-color: var(--bg-dark); border-color: var(--border-dark); color: var(--text-dark); }
+.theme-light .input-group input, .theme-light .input-group select { background-color: #fff; border-color: var(--border-light); color: var(--text-light); }
 .animal-input-group { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .animal-input-group label { flex-grow: 1; }
 
-/* --- BOTÕES --- */
-button { display: block; width: 100%; padding: 15px 20px; border: none; background-color: #3498db; color: white; border-radius: 8px; cursor: pointer; font-size: 18px; margin-top: 15px; transition: background-color 0.2s, transform 0.2s; }
-button:hover { background-color: #2980b9; transform: translateY(-2px); }
-.btn-secondary { background-color: #95a5a6; }
-.btn-secondary:hover { background-color: #7f8c8d; }
-.btn-danger { background-color: #e74c3c; position: absolute; bottom: 20px; width: calc(100% - 40px); }
-.btn-danger:hover { background-color: #c0392b; }
-.btn-disabled { background-color: #bdc3c7; cursor: not-allowed; }
-.btn-interaction { font-size: 14px; padding: 10px; margin-top: 8px; background-color: #2ecc71; }
-.btn-interaction:hover { background-color: #27ae60; }
-.btn-interaction.active { background-color: #f1c40f; color: #333; }
-
-/* --- GRUPO DE BOTÕES DE TEMPO --- */
-.btn-group { display: flex; flex-wrap: wrap; gap: 5px; }
-.btn-time { flex: 1 1 30%; padding: 8px; font-size: 12px; margin: 0; background-color: #95a5a6; }
-.btn-time.active { background-color: #3498db; transform: translateY(-2px); }
-
 /* --- TELA DO JOGO --- */
 #game-container { display: flex; gap: 20px; }
-#world { width: 800px; height: 600px; border: 2px solid #333; position: relative; background-size: cover; overflow: hidden; background-color: #fff; cursor: default; }
+#world { width: 800px; height: 600px; border: 2px solid; position: relative; background-size: cover; overflow: hidden; background-color: #fff; cursor: default; }
 #world.placing-mode { cursor: copy; }
-#info-panel { width: 220px; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); position: relative; }
-#animal-counts { margin: 15px 0; font-size: 14px; }
-.panel-subtitle { text-align: center; color: #7f8c8d; border-bottom: 1px solid #ecf0f1; padding-bottom: 5px; margin-top: 20px; }
+.theme-dark #world { border-color: var(--border-dark); }
+.theme-light #world { border-color: var(--text-light); }
 
-/* --- CENÁRIOS E ENTIDADES --- */
-.world-aquario { background-image: url('images/aquario_fundo.jpg'); }
-.world-floresta { background-image: url('images/floresta_fundo.jpg'); }
-.world-deserto { background-image: url('images/deserto_fundo.jpg'); }
+/* --- PAINEL DE INFORMAÇÕES DO JOGO --- */
+#info-panel { width: 250px; position: relative; }
+.stats-grid { display: grid; grid-template-columns: 1fr auto; gap: 8px 15px; margin-bottom: 15px; }
+.stat-item span:first-child { font-weight: 500; }
+.stat-item span:last-child { font-weight: 700; text-align: right; }
+.theme-dark .stat-item span:last-child { color: var(--accent-dark); }
+.theme-light .stat-item span:last-child { color: var(--accent-light); }
+#animal-counts { font-size: 14px; line-height: 1.6; }
 
+/* --- CONTROLES DE TEMPO E INTERAÇÃO --- */
+.btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn-time, .btn-interaction { flex-grow: 1; padding: 10px; font-size: 14px; margin: 0; }
+.btn-time { flex-basis: 25%; }
+.btn-time svg { width: 18px; height: 18px; fill: currentColor; }
+.theme-dark .btn-time { background-color: var(--border-dark); color: var(--text-dark); }
+.theme-light .btn-time { background-color: var(--border-light); color: var(--text-light); }
+.theme-dark .btn-time.active { background-color: var(--accent-dark); color: var(--bg-dark); }
+.theme-light .btn-time.active { background-color: var(--accent-light); color: #fff; }
+.btn-interaction { background-color: transparent; border: 1px solid; }
+.theme-dark .btn-interaction { color: var(--accent-dark); border-color: var(--accent-dark); }
+.theme-light .btn-interaction { color: var(--accent-light); border-color: var(--accent-light); }
+.theme-dark .btn-interaction.active { background-color: var(--accent-dark); color: var(--bg-dark); }
+.theme-light .btn-interaction.active { background-color: var(--accent-light); color: #fff; }
+
+/* --- EFEITOS DE MUNDO E ENTIDADES --- */
+#world-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; transition: background-color 2s ease-in-out; z-index: 50; }
+.world-night #world-overlay { background-color: rgba(10, 20, 50, 0.4); }
+.world-rain #world-overlay { background: linear-gradient(to bottom, rgba(135, 206, 250, 0.1), rgba(70, 130, 180, 0.3)), url(https://i.gifer.com/762y.gif); background-size: cover; opacity: 0.7; }
 .entity { position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center; transition: opacity 0.5s, transform 0.5s; }
 .animal { z-index: 10; cursor: grab; }
-.animal.dragging { z-index: 100; cursor: grabbing; transform: scale(1.1); }
-.comida, .agua { z-index: 5; }
-
+.animal.dragging { z-index: 100; cursor: grabbing; transform: scale(1.1); filter: drop-shadow(0 0 10px var(--accent-dark)); }
+/* Estilos de animais, comidas, etc. permanecem os mesmos */
 .rato { width: 60px; height: 60px; background-image: url('images/rato.png'); }
 .coelho { width: 65px; height: 65px; background-image: url('images/coelho.png'); }
 .animal.filhote { width: 30px; height: 30px; }
-
-.racao { width: 25px; height: 25px; background-image: url('images/racao.png'); }
-.grama { width: 30px; height: 30px; background-image: url('images/grama.png'); }
-.bebedouro { width: 60px; height: 60px; background-image: url('images/bebedouro.png'); }
 .pedra { width: 70px; height: 70px; background-image: url('images/pedra.png'); z-index: 20; }
+
+/* --- UI DOS ANIMAIS (Barras de Vida, Balão) --- */
+.health-bar-container { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 50px; height: 8px; background-color: rgba(0,0,0,0.3); border-radius: 4px; border: 1px solid rgba(255,255,255,0.5); z-index: 11; }
+.hide-health-bars .health-bar-container { display: none; }
+.health-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s, background-color 0.5s; }
+.health-green { background-color: #2ecc71; }
+.health-yellow { background-color: #f1c40f; }
+.health-red { background-color: #e74c3c; }
+.status-bubble { position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%); padding: 5px 10px; border-radius: 10px; font-size: 12px; font-weight: 500; white-space: nowrap; z-index: 100; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.theme-dark .status-bubble { background-color: var(--bg-dark); color: var(--text-dark); border: 1px solid var(--border-dark); }
+.theme-light .status-bubble { background-color: var(--panel-bg-light); color: var(--text-light); border: 1px solid var(--border-light); }
+.status-bubble.visible { opacity: 1; }
+.status-bubble::after { content: ''; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; transition: border-color 0.3s ease; }
+.theme-dark .status-bubble::after { border-color: var(--bg-dark) transparent transparent transparent; }
+.theme-light .status-bubble::after { border-color: var(--panel-bg-light) transparent transparent transparent; }
