@@ -44,10 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let animais = []; let comidas = []; let aguas = []; let obstaculos = [];
     let animalSendoArrastado = null; let modoDeColocarPedra = false;
     const WORLD_WIDTH = 800; const WORLD_HEIGHT = 600;
-    
-    // NOVO: Controle de Tempo
     let gameInterval;
-    const BASE_TICK_SPEED = 100; // A velocidade de 1x
+    const BASE_TICK_SPEED = 100;
     let currentSpeedMultiplier = 1;
 
     // === LÓGICA DE CLASSES ===
@@ -84,13 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.gender = Math.random() > 0.5 ? 'male' : 'female'; this.isGestating = false; this.gestationTimer = 0;
             this.lastKnownFoodLocation = null; this.lastKnownWaterLocation = null;
             this.alvo = null; this.estado = 'vagando';
-
-            this.element.addEventListener('mousedown', (e) => {
-                if(modoDeColocarPedra) return;
-                e.preventDefault();
-                animalSendoArrastado = this;
-                this.element.classList.add('dragging');
-            });
+            this.element.addEventListener('mousedown', (e) => { if(!modoDeColocarPedra) { e.preventDefault(); animalSendoArrastado = this; this.element.classList.add('dragging'); } });
         }
         atualizar() {
             if (this.foiRemovido || animalSendoArrastado === this) return;
@@ -103,7 +95,19 @@ document.addEventListener('DOMContentLoaded', () => {
             this.element.style.left = `${this.x}px`; this.element.style.top = `${this.y}px`;
             this.element.style.opacity = Math.max(0.3, (100 - Math.max(this.fome, this.sede)) / 100);
         }
-        decidirAcao() { /* ... Lógica complexa ... */ } // Essencialmente a mesma lógica de antes
+        decidirAcao() {
+            if (this.sede > 60) { this.alvo = this.encontrarMaisProximo(aguas); this.estado = 'buscandoAgua'; return; }
+            if (this.fome > 50) { this.alvo = this.encontrarComida(); this.estado = 'buscandoComida'; return; }
+            if (this.isMature && this.gender === 'female' && this.reproductionUrge > 70 && this.fome < 40 && this.sede < 40) {
+                const parceiro = this.encontrarMaisProximo(animais.filter(a => a.tipo === this.tipo && a.isMature && a.gender === 'male' && !a.isGestating));
+                if (parceiro) { this.alvo = parceiro; this.estado = 'buscandoParceiro'; return; }
+            }
+            if (this.sede > 30 && this.lastKnownWaterLocation) { this.alvo = this.lastKnownWaterLocation; this.estado = 'buscandoAgua'; return; }
+            if (this.fome > 30 && this.lastKnownFoodLocation) { this.alvo = this.lastKnownFoodLocation; this.estado = 'buscandoComida'; return; }
+            this.estado = 'vagando'; this.alvo = null;
+        }
+        encontrarComida() { const comidasCompativeis = comidas.filter(c => this.oQueCome.includes(c.tipo)); return this.encontrarMaisProximo(comidasCompativeis); }
+        encontrarMaisProximo(lista) { return lista.reduce((maisProximo, alvo) => { if (!alvo || alvo === this || alvo.foiRemovido) return maisProximo; const dist = Math.hypot(this.x - alvo.x, this.y - alvo.y); if (!maisProximo || dist < maisProximo.dist) { return { alvo: alvo, dist: dist }; } return maisProximo; }, null)?.alvo; }
         moverParaAlvo() {
             if (!this.alvo || this.alvo.foiRemovido) { this.alvo = null; return; }
             const dx = this.alvo.x - this.x, dy = this.alvo.y - this.y, dist = Math.hypot(dx, dy);
@@ -115,10 +119,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             this.x = nextX; this.y = nextY;
         }
-        interagirComAlvo() { /* ... Lógica complexa ... */ } // Essencialmente a mesma lógica de antes
+        interagirComAlvo() {
+            switch(this.estado) {
+                case 'buscandoComida': this.fome = Math.max(0, this.fome - 60); this.lastKnownFoodLocation = { x: this.alvo.x, y: this.alvo.y, foiRemovido: true }; this.alvo.remover(); comidas = comidas.filter(c => c !== this.alvo); break;
+                case 'buscandoAgua': this.sede = Math.max(0, this.sede - 70); this.lastKnownWaterLocation = { x: this.alvo.x, y: this.alvo.y }; break;
+                case 'buscandoParceiro': if(this.alvo?.isMature) { this.isGestating = true; this.gestationTimer = 150; this.reproductionUrge = 0; } break;
+            }
+            this.alvo = null;
+        }
         checarColisao(x, y) { for (const obs of obstaculos) { const b = obs.getBounds(); if (x < b.right && x + this.width > b.left && y < b.bottom && y + this.height > b.top) return true; } return false; }
-        vagar() { /* ... Lógica de vagar ... */ }
-        darALuz() { /* ... Lógica de dar à luz ... */ }
+        vagar() { if (!this.vagarAlvo || Math.random() < 0.05) { this.vagarAlvo = { x: Math.random() * WORLD_WIDTH, y: Math.random() * WORLD_HEIGHT }; } const dx = this.vagarAlvo.x - this.x, dy = this.vagarAlvo.y - this.y, dist = Math.hypot(dx, dy); if (dist < 20) { this.vagarAlvo = null; } else { this.x += (dx / dist) * (this.velocidade / 2); this.y += (dy / dist) * (this.velocidade / 2); } }
+        darALuz() { this.isGestating = false; const numFilhotes = Math.floor(Math.random() * 3) + 1; for(let i=0; i<numFilhotes; i++) { animais.push(new Animal(this.tipo, this.x + (Math.random()*20-10), this.y + (Math.random()*20-10))); } }
         morrer() { this.foiRemovido = true; animais = animais.filter(a => a !== this); this.element.style.transform = 'rotate(180deg)'; this.element.style.opacity = '0.4'; this.element.style.zIndex = '1'; }
     }
 
@@ -129,17 +140,16 @@ document.addEventListener('DOMContentLoaded', () => {
         world.innerHTML = ''; animais = []; comidas = []; aguas = []; obstaculos = []; tempo = 0;
         world.className = `world-${scenarioSelect.value}`;
         for(let i=0; i<numAguaInput.value; i++) aguas.push(new Agua());
-        const tiposSel = Array.from(animalSelectionDiv.querySelectorAll('input')).filter(i => i.value > 0).map(i => i.dataset.tipo);
-        if (tiposSel.length > 0) { for (let i = 0; i < numComidaInput.value; i++) { const tipoComida = DEFINICOES_ANIMAIS[tiposSel[i % tiposSel.length]].come[0]; comidas.push(new Comida(tipoComida)); } }
-        animalSelectionDiv.querySelectorAll('input').forEach(input => { for(let i=0; i<input.value; i++) { animais.push(new Animal(input.dataset.tipo)); } });
-        simulaçãoAtiva = true;
-        setGameSpeed(1); // Inicia o jogo na velocidade normal
+        const tiposSel = Array.from(animalSelectionDiv.querySelectorAll('input')).filter(i => parseInt(i.value) > 0).map(i => i.dataset.tipo);
+        if (tiposSel.length > 0) { for (let i = 0; i < parseInt(numComidaInput.value); i++) { const tipoComida = DEFINICOES_ANIMAIS[tiposSel[i % tiposSel.length]].come[0]; comidas.push(new Comida(tipoComida)); } }
+        animalSelectionDiv.querySelectorAll('input').forEach(input => { for(let i=0; i<parseInt(input.value); i++) { animais.push(new Animal(input.dataset.tipo)); } });
+        setGameSpeed(1);
         Telas.mostrar('game');
     }
 
     function gameLoop() {
         if (!simulaçãoAtiva) return;
-        tempo += 0.1 * currentSpeedMultiplier; // O tempo passa mais rápido com o multiplicador
+        tempo += 0.1 * currentSpeedMultiplier;
         [...animais].forEach(animal => animal.atualizar());
         populacaoTotalSpan.textContent = animais.length;
         tempoSpan.textContent = tempo.toFixed(1);
@@ -148,27 +158,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (animais.length === 0 && tempo > 1) finalizarSimulacao('extinção');
     }
 
-    // ALTERADO: Função central para controlar a velocidade
     function setGameSpeed(multiplier) {
-        clearInterval(gameInterval); // Limpa o loop anterior
+        clearInterval(gameInterval);
         currentSpeedMultiplier = multiplier;
-
         if (multiplier > 0) {
             simulaçãoAtiva = true;
             const newInterval = BASE_TICK_SPEED / multiplier;
             gameInterval = setInterval(gameLoop, newInterval);
         } else {
-            simulaçãoAtiva = false; // Pausa o jogo
+            simulaçãoAtiva = false;
         }
-        // Atualiza o botão ativo na UI
-        timeControlButtons.forEach(btn => {
-            btn.classList.toggle('active', parseFloat(btn.dataset.speed) === multiplier);
-        });
+        timeControlButtons.forEach(btn => { btn.classList.toggle('active', parseFloat(btn.dataset.speed) === multiplier); });
     }
 
     function finalizarSimulacao(motivo) {
-        setGameSpeed(0); // Pausa o jogo
-        simulaçãoAtiva = false; // Garante que está inativo
+        clearInterval(gameInterval);
+        simulaçãoAtiva = false;
         if (motivo === 'extinção') alert(`A simulação terminou! A vida foi extinta em ${tempo.toFixed(1)} segundos.`);
     }
 
@@ -180,9 +185,8 @@ document.addEventListener('DOMContentLoaded', () => {
         Telas.mostrar('menu');
     }
 
-    // === FUNÇÕES DE INTERAÇÃO EM TEMPO REAL ===
-    function adicionarAnimal(tipo) { if (!simulaçãoAtiva && currentSpeedMultiplier === 0) simulaçãoAtiva = true; animais.push(new Animal(tipo)); }
-    function adicionarComidaAleatoria() { if ((!simulaçãoAtiva && currentSpeedMultiplier === 0)) simulaçãoAtiva = true; if(animais.length === 0) return; const tipoA = animais[Math.floor(Math.random() * animais.length)].tipo; const tipoC = DEFINICOES_ANIMAIS[tipoA].come[0]; comidas.push(new Comida(tipoC)); }
+    function adicionarAnimal(tipo) { animais.push(new Animal(tipo)); }
+    function adicionarComidaAleatoria() { if(animais.length === 0) return; const tipoA = animais[Math.floor(Math.random() * animais.length)].tipo; const tipoC = DEFINICOES_ANIMAIS[tipoA].come[0]; comidas.push(new Comida(tipoC)); }
     function toggleModoPedra() { modoDeColocarPedra = !modoDeColocarPedra; btnColocarPedra.classList.toggle('active', modoDeColocarPedra); world.classList.toggle('placing-mode', modoDeColocarPedra); }
 
     // === EVENT LISTENERS ===
@@ -194,21 +198,10 @@ document.addEventListener('DOMContentLoaded', () => {
     btnAddRato.addEventListener('click', () => adicionarAnimal('rato'));
     btnAddCoelho.addEventListener('click', () => adicionarAnimal('coelho'));
     btnColocarPedra.addEventListener('click', toggleModoPedra);
-    
-    timeControlButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const speed = parseFloat(button.dataset.speed);
-            setGameSpeed(speed);
-        });
-    });
-
+    timeControlButtons.forEach(button => { button.addEventListener('click', () => { setGameSpeed(parseFloat(button.dataset.speed)); }); });
     world.addEventListener('click', (e) => { if (!modoDeColocarPedra) return; const rect = world.getBoundingClientRect(); obstaculos.push(new Obstaculo(e.clientX - rect.left, e.clientY - rect.top)); });
-    window.addEventListener('mousemove', (e) => { if (!animalSendoArrastado) return; const rect = world.getBoundingClientRect(); animalSendoArrastado.x = e.clientX - rect.left - 30; animalSendoArrastado.y = e.clientY - rect.top - 30; animalSendoArrastado.element.style.left = `${animalSendoArrastado.x}px`; animalSendoArrastado.element.style.top = `${animalSendoArrastado.y}px`; });
+    window.addEventListener('mousemove', (e) => { if (!animalSendoArrastado) return; const rect = world.getBoundingClientRect(); animalSendoArrastado.x = e.clientX - rect.left - (animalSendoArrastado.width / 2); animalSendoArrastado.y = e.clientY - rect.top - (animalSendoArrastado.height / 2); animalSendoArrastado.element.style.left = `${animalSendoArrastado.x}px`; animalSendoArrastado.element.style.top = `${animalSendoArrastado.y}px`; });
     window.addEventListener('mouseup', () => { if (!animalSendoArrastado) return; animalSendoArrastado.element.classList.remove('dragging'); animalSendoArrastado = null; });
-    
-    // As lógicas internas das classes foram mantidas, cole o bloco inteiro
-    // para garantir o funcionamento. As funções omitidas com '...' na 
-    // explicação devem ser preenchidas com o código real.
     
     // === INICIALIZAÇÃO ===
     popularSetup();
