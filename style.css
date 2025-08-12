@@ -78,6 +78,15 @@ button:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow:
 .theme-dark .btn-time { background-color: var(--border-dark); color: var(--text-dark); } .theme-light .btn-time { background-color: var(--border-light); color: var(--text-light); }
 .theme-dark .btn-time.active { background-color: var(--accent-dark); color: var(--bg-dark); } .theme-light .btn-time.active { background-color: var(--accent-light); color: #fff; }
 .interaction-group .btn-interaction { flex: 1 1 100px; margin: 0; padding: 8px; font-size: 14px;}
+.interaction-group .btn-interaction.active {
+    background-color: var(--accent-dark);
+    color: var(--bg-dark);
+}
+.theme-light .interaction-group .btn-interaction.active {
+    background-color: var(--accent-light);
+    color: #fff;
+}
+
 
 /* --- LOG DE EVENTOS --- */
 #log-container { height: 100%; font-size: 13px; line-height: 1.5; }
