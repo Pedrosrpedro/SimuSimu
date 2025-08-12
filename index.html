@@ -51,12 +51,15 @@
     </div>
     
     <div id="info-panel" class="panel">
+        <!-- PAINEL PRINCIPAL COM ABAS -->
         <div id="main-info-panel">
             <div class="tabs">
                 <button class="tab-button active" data-tab="status">Status</button>
                 <button class="tab-button" data-tab="graficos">Gráficos</button>
                 <button class="tab-button" data-tab="log">Log</button>
             </div>
+            
+            <!-- CONTEÚDO DA ABA DE STATUS -->
             <div id="tab-status" class="tab-content active">
                 <h2>Status da Simulação</h2>
                 <div class="stats-grid">
@@ -81,18 +84,25 @@
                     <button class="btn-interaction" id="btn-modo-territorio">Territórios</button>
                 </div>
             </div>
+
+            <!-- CONTEÚDO DA ABA DE GRÁFICOS -->
             <div id="tab-graficos" class="tab-content">
                 <h2>Gráfico Populacional</h2>
                 <div class="chart-container">
                     <canvas id="populationChart"></canvas>
                 </div>
             </div>
+
+            <!-- CONTEÚDO DA ABA DE LOG -->
             <div id="tab-log" class="tab-content">
                 <h2>Log de Eventos</h2>
                 <div id="log-container"></div>
             </div>
+            
             <button id="resetarSimulacao" class="btn-danger">Encerrar Simulação</button>
         </div>
+        
+        <!-- PAINEL DE INSPEÇÃO -->
         <div id="inspection-panel" class="hidden">
             <div class="inspection-header">
                 <h2 id="inspect-nome">Nome do Animal</h2>
@@ -103,17 +113,18 @@
                 <p><strong>Idade:</strong> <span id="inspect-idade"></span></p>
                 <p><strong>Tribo:</strong> <span id="inspect-tribo">Nenhuma</span></p>
                 <p><strong>Função:</strong> <span id="inspect-funcao">Nenhuma</span></p>
-                <!-- NOVO CAMPO DE ESTADO -->
                 <p><strong>Ação Atual:</strong> <span id="inspect-estado"></span></p>
                 
                 <h3 class="panel-subtitle">Status</h3>
                 <div class="inspect-stat"><label>Saúde (Fome)</label><div class="stat-bar-container"><div id="inspect-fome" class="stat-bar"></div></div></div>
                 <div class="inspect-stat"><label>Hidratação (Sede)</label><div class="stat-bar-container"><div id="inspect-sede" class="stat-bar"></div></div></div>
-                 <div class="inspect-stat"><label>Calor (Frio)</label><div class="stat-bar-container"><div id="inspect-frio" class="stat-bar"></div></div></div>
+                <div class="inspect-stat"><label>Calor (Frio)</label><div class="stat-bar-container"><div id="inspect-frio" class="stat-bar"></div></div></div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- SCRIPT LOCAL PARA CONTROLE DE UI -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const infoPanel = document.getElementById('info-panel');
@@ -135,6 +146,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
+
+<!-- SCRIPT PRINCIPAL DO JOGO -->
 <script src="script.js"></script>
+
 </body>
 </html>
