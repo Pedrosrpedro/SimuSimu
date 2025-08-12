@@ -2,143 +2,182 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>SimuSimu - v0.9</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Importação da biblioteca de gráficos -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Ecossistema</title>
+    <!-- Link para a biblioteca de gráficos Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="theme-dark">
-
-<!-- TELA 1: MENU PRINCIPAL -->
-<div id="main-menu-container" class="panel">
-    <h1 class="game-title">SimuSimu</h1>
-    <p class="game-subtitle">Um Simulador de Simulações</p>
-    <button id="btn-nova-simulacao">Nova Simulação</button>
-    <button class="btn-disabled" title="Em breve!">Carregar Simulação</button>
-    <button id="btn-toggle-theme" class="btn-secondary">Alternar Tema</button>
-</div>
-
-<!-- TELA 2: CONFIGURAÇÃO DA SIMULAÇÃO -->
-<div id="setup-container" class="panel hidden">
-    <h1>Configurar Nova Simulação</h1>
-    <div class="setup-section">
-        <h3>Cenário e Recursos</h3>
-        <div class="input-group"><label for="scenario">Cenário:</label><select id="scenario"><option value="floresta">Floresta</option><option value="aquario">Aquário</option><option value="deserto">Deserto</option></select></div>
-        <div class="input-group"><label for="numComida">Comida Inicial:</label><input type="number" id="numComida" value="15" min="1" max="50"></div>
-        <div class="input-group"><label for="numAgua">Água Inicial:</label><input type="number" id="numAgua" value="5" min="1" max="20"></div>
-    </div>
-    <div class="setup-section">
-        <h3>Animais Iniciais</h3>
-        <div id="animal-selection"></div>
-    </div>
-    <button id="iniciarSimulacao">Iniciar Simulação</button>
-    <button id="btn-voltar-menu" class="btn-secondary">Voltar ao Menu</button>
-</div>
-
-<!-- TELA 3: JOGO -->
-<div id="game-container" class="hidden">
-    <div id="world">
-        <div id="world-overlay"></div>
-        <!-- Container para as partículas de chuva/neve -->
-        <div id="particle-container"></div>
-    </div>
+    <!-- Link para o seu arquivo de estilos CSS -->
+    <link rel="stylesheet" href="style.css">
     
-    <div id="info-panel" class="panel">
-        <div class="tabs">
-            <button class="tab-button active" data-tab="status">Status</button>
-            <button class="tab-button" data-tab="graficos">Gráficos</button>
-            <button class="tab-button" data-tab="log">Log</button>
-        </div>
-
-        <!-- Aba de Status -->
-        <div id="tab-status" class="tab-content active">
-            <h2>Status da Simulação</h2>
-            <div class="stats-grid">
-                <div class="stat-item"><span>População</span><span id="populacaoTotal">0</span></div>
-                <div class="stat-item"><span>Tempo</span><span id="tempo">0s</span></div>
-            </div>
-            <div id="animal-counts"></div>
-
-            <h3 class="panel-subtitle">Controle de Tempo</h3>
-            <div id="time-controls" class="btn-group">
-                <button class="btn-time" data-speed="0" title="Pausar"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
-                <button class="btn-time" data-speed="0.5" title="Câmera Lenta"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M10 18l-6-6 6-6v12zM18 6l-6 6 6 6V6z"/></svg></button>
-                <button class="btn-time active" data-speed="1" title="Velocidade Normal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
-                <button class="btn-time" data-speed="2" title="2x Velocidade"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
-                <button class="btn-time" data-speed="5" title="5x Velocidade"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg></button>
-            </div>
-
-            <h3 class="panel-subtitle">Ações Manuais</h3>
-            <div class="btn-group">
-                <button class="btn-interaction" id="btn-add-comida" title="Adicionar comida aleatória">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-                    <span>Comida</span>
-                </button>
-                <button class="btn-interaction" id="btn-colocar-pedra" title="Adicionar uma pedra">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 14H7v-4h4v4zm0-6H7V7h4v4zm6 6h-4v-4h4v4zm0-6h-4V7h4v4z"/></svg>
-                    <span>Pedra</span>
-                </button>
-                <button class="btn-interaction" id="btn-add-rato" title="Adicionar um rato">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-                    <span>Rato</span>
-                </button>
-                <button class="btn-interaction" id="btn-add-coelho" title="Adicionar um coelho">
-                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-                    <span>Coelho</span>
-                </button>
-                <button class="btn-interaction" id="btn-modo-territorio" title="Mostrar/Ocultar zonas de território">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 13C8.69 17.5 6 15.01 6 12s2.69-5.5 6-5.5 6 2.49 6 5.5-2.69 5.5-6 5.5zm0-9C9.79 8.5 8 10.08 8 12s1.79 3.5 4 3.5 4-1.58 4-3.5S14.21 8.5 12 8.5z"/></svg>
-                    <span>Territórios</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Aba de Gráficos -->
-        <div id="tab-graficos" class="tab-content">
-            <h2>Gráfico Populacional</h2>
-            <div class="chart-container">
-                <canvas id="populationChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Aba de Log -->
-        <div id="tab-log" class="tab-content">
-            <h2>Log de Eventos</h2>
-            <div id="log-container"></div>
-        </div>
-        
-        <button id="resetarSimulacao" class="btn-danger">Encerrar Simulação</button>
-    </div>
-</div>
-
-<!-- Script para controle das abas -->
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const infoPanel = document.getElementById('info-panel');
-    if (!infoPanel) return;
-
-    infoPanel.addEventListener('click', function(e) {
-        if (e.target.closest('.tab-button')) {
-            const tabButton = e.target.closest('.tab-button');
-            const tabId = tabButton.dataset.tab;
-            
-            infoPanel.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            infoPanel.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            tabButton.classList.add('active');
-            document.getElementById(`tab-${tabId}`).classList.add('active');
+    <!-- Seus estilos CSS podem ir aqui também, se preferir -->
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+            overflow: hidden; /* Evita barras de rolagem desnecessárias */
         }
-    });
+        .hidden { display: none !important; }
 
-    const themeToggleButton = document.getElementById('btn-toggle-theme');
-    themeToggleButton.addEventListener('click', () => {
-        document.body.classList.toggle('theme-light');
-        document.body.classList.toggle('theme-dark');
-    });
-});
-</script>
-<script src="script.js"></script>
+        .menu-container, .game-container {
+            text-align: center;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        
+        /* Ajustes para quando o jogo estiver em tela cheia */
+        .game-container:fullscreen {
+            padding: 10px;
+            background-color: #111;
+        }
+
+        #game-area {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            height: calc(100% - 100px); /* Ajusta altura para caber os controles */
+        }
+
+        #world {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border: 2px solid #333;
+            background-color: #a0d4a0; /* Verde claro padrão */
+            overflow: hidden;
+            margin: auto;
+        }
+        
+        .entity {
+            position: absolute;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        /* --- Estilos dos animais --- */
+        .animal { width: 30px; height: 30px; z-index: 10; border-radius: 50%; }
+        .rato { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23666"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 6h2v6h-2zm0 8h2v2h-2z"/></svg>');}
+        .coelho { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23d4a373"><path d="M12 2c-.9 0-1.7.3-2.4.8C8.9 2.3 8 2 7 2c-1.7 0-3 1.3-3 3 0 .8.3 1.5.8 2.1C4.3 8.3 4 9.1 4 10c0 1.7 1.3 3 3 3 .8 0 1.5-.3 2.1-.8.6.5 1.3.8 2.1.8s1.5-.3 2.1-.8c.6.5 1.3.8 2.1.8 1.7 0 3-1.3 3-3 0-.9-.3-1.7-.8-2.4.5-.6.8-1.4.8-2.2 0-1.7-1.3-3-3-3-.9 0-1.7.3-2.4.8-.7-.5-1.5-.8-2.4-.8zm-5 4c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm10 0c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1z"/></svg>');}
+        .filhote { transform: scale(0.6); }
+
+        /* Estilo para coloração de tribo */
+        .animal.tribal-view::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--tribe-color-overlay);
+            mix-blend-mode: hard-light; opacity: 0.6;
+            pointer-events: none; border-radius: inherit; transition: opacity 0.5s ease-in-out;
+        }
+
+        /* --- Outras Entidades --- */
+        .comida { width: 20px; height: 20px; border-radius: 50%; z-index: 1;}
+        .racao { background-color: #saddlebrown; }
+        .grama { background-color: #3e8e41; }
+        .agua { width: 40px; height: 40px; background-color: #89cff0; border-radius: 50%; z-index: 1;}
+        .pedra { width: 70px; height: 70px; background-color: #888; border: 3px solid #555; border-radius: 15px; z-index: 5;}
+        .carcaca { width: 30px; height: 30px; background-color: #5d4037; border-radius: 50%; }
+        
+        /* Animações e Partículas */
+        .atingido { animation: tremer-rapido 0.2s ease-in-out; }
+        @keyframes tremer-rapido { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+        
+        .particula-combate { position: absolute; width: 6px; height: 6px; background-color: red; border-radius: 50%; z-index: 100; pointer-events: none; animation: particula-explosao 0.5s forwards; }
+        @keyframes particula-explosao { from { transform: scale(1); opacity: 1; } to { transform: scale(0) translate(var(--x), var(--y)); opacity: 0; } }
+
+        /* ... outros estilos ... */
+    </style>
+</head>
+<body>
+
+    <!-- Container do Menu Principal -->
+    <div id="main-menu-container" class="menu-container">
+        <h1>Simulador de Ecossistema</h1>
+        <button id="btn-nova-simulacao" class="btn">Nova Simulação</button>
+        <!-- BOTÃO DE TELA CHEIA ADICIONADO AQUI -->
+        <button id="btn-fullscreen" class="btn">Tela Cheia</button>
+    </div>
+
+    <!-- Container da Tela de Configuração -->
+    <div id="setup-container" class="menu-container hidden">
+        <h2>Configurar Simulação</h2>
+        <div id="animal-selection"></div>
+        <div>
+            <label for="numComida">Comida inicial:</label>
+            <input type="number" id="numComida" value="10" min="0" max="50">
+        </div>
+        <div>
+            <label for="numAgua">Fontes de água:</label>
+            <input type="number" id="numAgua" value="3" min="0" max="10">
+        </div>
+        <div>
+            <label for="scenario">Cenário:</label>
+            <select id="scenario">
+                <option value="gramado">Gramado</option>
+                <option value="floresta">Floresta</option>
+                <option value="deserto">Deserto</option>
+            </select>
+        </div>
+        <br>
+        <button id="iniciarSimulacao" class="btn">Iniciar!</button>
+        <button id="btn-voltar-menu" class="btn">Voltar ao Menu</button>
+    </div>
+
+    <!-- Container Principal do Jogo -->
+    <div id="game-container" class="game-container hidden">
+        <div id="top-bar">
+            <!-- Controles e informações -->
+        </div>
+        <div id="game-area">
+            <div id="world">
+                <div id="world-overlay"></div>
+                <div id="particle-container"></div>
+            </div>
+            <div id="sidebar">
+                <h3>Controles</h3>
+                <button id="btn-add-comida">Add Comida</button>
+                <button id="btn-add-rato">Add Rato</button>
+                <button id="btn-add-coelho">Add Coelho</button>
+                <button id="btn-colocar-pedra">Colocar Pedra</button>
+                <button id="btn-modo-territorio">Ver Tribos</button>
+                <hr>
+                <h4>Velocidade</h4>
+                <button class="btn-time" data-speed="0">Pausar</button>
+                <button class="btn-time active" data-speed="1">1x</button>
+                <button class="btn-time" data-speed="2">2x</button>
+                <button class="btn-time" data-speed="5">5x</button>
+                <hr>
+                <button id="resetarSimulacao" class="btn">Resetar e Voltar ao Menu</button>
+            </div>
+            <div id="stats-panel">
+                 <h3>Estatísticas</h3>
+                <p>Tempo: <span id="tempo">0</span>s</p>
+                <p>População Total: <span id="populacaoTotal">0</span></p>
+                <div id="animal-counts"></div>
+                <div style="width: 300px; height: 200px; position: relative;">
+                    <canvas id="populationChart"></canvas>
+                </div>
+                 <h3>Log de Eventos</h3>
+                <div id="log-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link para o seu arquivo JavaScript (deve vir no final do body) -->
+    <script src="script.js"></script>
 
 </body>
 </html>
