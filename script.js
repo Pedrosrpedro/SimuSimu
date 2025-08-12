@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const MAP_WIDTH = 800, MAP_HEIGHT = 600, HEALTH_BAR_THRESHOLD = 30;
     let gameInterval, currentSpeedMultiplier = 1;
     let animalInspecionado = null, isClickDrag = false, objetoSendoArrastado = null;
-    let populationChart; // Definida globalmente para ser acessível
+    let populationChart;
 
     // === LÓGICA DE CLASSES ===
 
@@ -154,8 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
             this.elementoVisual.classList.toggle('active', modoTerritorio);
             this.elementoVisual.style.width = `${this.territorioRaio * 2}px`;
             this.elementoVisual.style.height = `${this.territorioRaio * 2}px`;
-            this.elementoVisual.style.left = `${this.abrigo.x + (this.abrigo?.width / 2 || 0) - this.territorioRaio}px`;
-            this.elementoVisual.style.top = `${this.abrigo.y + (this.abrigo?.height / 2 || 0) - this.territorioRaio}px`;
+            this.elementoVisual.style.left = `${(this.abrigo?.x || 0) + (this.abrigo?.width / 2 || 0) - this.territorioRaio}px`;
+            this.elementoVisual.style.top = `${(this.abrigo?.y || 0) + (this.abrigo?.height / 2 || 0) - this.territorioRaio}px`;
             this.elementoVisual.style.borderColor = this.cor;
             if (this.abrigo) {
                 this.abrigo.element.style.setProperty('--food-count', `'${this.recursos.comida}'`);
@@ -253,6 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         decidirAcao() {
+             if (this.alvo && !this.alvo.foiRemovido) return; // CORREÇÃO: IA com compromisso
              if (this.tribo && !this.tribo.foiRemovido) {
                 if (this.itemCarregado) { this.estado = 'Levando para Abrigo'; this.alvo = this.tribo.abrigo; return; }
                 switch (this.funcao) {
@@ -294,13 +295,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!this.alvo) return;
             switch(this.estado) {
                 case 'Atacando': this.alvo.morrer('combate', this.tribo); break;
-                case 'Coletando Comida': if(this.alvo instanceof Comida){ this.itemCarregado = this.alvo.tipo; this.alvo.remover(); comidas = comidas.filter(c => c.id !== this.alvo.id); } break;
+                case 'Coletando Comida': if(this.alvo instanceof Comida){ this.itemCarregado = this.alvo.tipo; this.alvo.remover(); } break;
                 case 'Levando para Abrigo': if (this.tribo) { this.tribo.recursos.comida++; this.itemCarregado = null; } break;
                 case 'Comendo no Abrigo': if (this.tribo && this.tribo.recursos.comida > 0) { this.tribo.recursos.comida--; this.fome = Math.max(0, this.fome - 80); } break;
                 case 'Fundando Tribo': this.abrigo = new Abrigo(this.x, this.y); abrigos.push(this.abrigo); tribos.push(new Tribe(this)); break;
                 case 'Acasalando': if (this.alvo instanceof Animal) { this.isGestating = true; this.gestationTimer = 150; this.reproductionUrge = 0; } break;
                 case 'Bebendo Água': if (this.alvo instanceof Agua) { this.sede = Math.max(0, this.sede - 80); this.alvo.refill?.(); } break;
-                case 'Buscando Comida': if (this.alvo instanceof Comida) { this.fome = Math.max(0, this.fome - 60); this.alvo.remover(); comidas = comidas.filter(c => c.id !== this.alvo.id); } break;
+                case 'Buscando Comida': if (this.alvo instanceof Comida) { this.fome = Math.max(0, this.fome - 60); this.alvo.remover(); } break;
             }
             this.alvo = null;
         }
@@ -373,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function gameLoop() {
         if (!simulaçãoAtiva) return;
-        tempo += 0.1;
+        tempo += 0.1 * currentSpeedMultiplier;
         
         [...tribos].forEach(t => t.atualizarTribo());
         [...animais].forEach(a => a.atualizar());
