@@ -71,11 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
             this.territorioRaio = 150;
             this.diplomacia = {};
             this.foiRemovido = false;
-
             this.elementoVisual = document.createElement('div');
             this.elementoVisual.className = 'territorio-visual';
             world.appendChild(this.elementoVisual);
-            
             this.adicionarMembro(fundador, 'Lider');
             this.atualizarVisual();
             adicionarLog(`A ${this.nome} foi fundada!`, 'tribo');
@@ -90,7 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
         adicionarMembro(animal, funcao = null) {
             if (this.membros.includes(animal) || (this.membros.length > 0 && animal.tipo !== this.membros[0].tipo)) return;
             if (animal.tribo) animal.tribo.removerMembro(animal);
-
             this.membros.push(animal);
             animal.tribo = this;
             animal.element.style.setProperty('--cor-tribo', this.cor);
@@ -102,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.membros = this.membros.filter(m => m.id !== animal.id);
             animal.tribo = null; animal.funcao = null;
             animal.element.style.removeProperty('--cor-tribo');
-
             if (animal === this.lider && this.membros.length > 0) {
                 this.lider = this.membros[0]; this.lider.funcao = 'Lider';
                 adicionarLog(`${this.lider.nome} é o novo líder da ${this.nome}.`, 'tribo');
@@ -184,8 +180,10 @@ document.addEventListener('DOMContentLoaded', () => {
             this.width = 0; this.height = 0;
             world.appendChild(this.element);
             setTimeout(() => {
-                this.width = this.element.offsetWidth;
-                this.height = this.element.offsetHeight;
+                if(this.element) {
+                    this.width = this.element.offsetWidth;
+                    this.height = this.element.offsetHeight;
+                }
             }, 0);
             this.element.entidade = this;
             this.id = Date.now() + Math.random();
@@ -210,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.element.style.opacity = this.timerDecomposicao / 400;
             if (this.timerDecomposicao <= 0 || this.nutrientes <= 0) {
                 this.remover();
-                carcacas = carcacas.filter(c => c.id !== this.id);
             }
         }
      }
@@ -225,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 maxAge: 400 + Math.random() * 200, 
                 gender: Math.random() > 0.5 ? 'male' : 'female', isGestating: false, gestationTimer: 0,
                 alvo: null, estado: 'Vagando', abrigo: null, frio: 0, oQueCome: DEFINICOES_ANIMAIS[tipo].come,
-                tribo: null, funcao: null, itemCarregado: null, vagarAlvo: null
+                tribo: null, funcao: null, itemCarregado: null
             });
             this.element.classList.add('filhote');
             this.healthBarContainer = document.createElement('div'); this.healthBarContainer.className = 'health-bar-container';
@@ -253,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         decidirAcao() {
-             if (this.alvo && !this.alvo.foiRemovido) return; // CORREÇÃO: IA com compromisso
+             if (this.alvo && !this.alvo.foiRemovido) return;
              if (this.tribo && !this.tribo.foiRemovido) {
                 if (this.itemCarregado) { this.estado = 'Levando para Abrigo'; this.alvo = this.tribo.abrigo; return; }
                 switch (this.funcao) {
@@ -294,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
         interagirComAlvo() {
             if (!this.alvo) return;
             switch(this.estado) {
-                case 'Atacando': this.alvo.morrer('combate', this.tribo); break;
+                case 'Atacando': if (this.alvo.morrer) this.alvo.morrer('combate', this.tribo); break;
                 case 'Coletando Comida': if(this.alvo instanceof Comida){ this.itemCarregado = this.alvo.tipo; this.alvo.remover(); } break;
                 case 'Levando para Abrigo': if (this.tribo) { this.tribo.recursos.comida++; this.itemCarregado = null; } break;
                 case 'Comendo no Abrigo': if (this.tribo && this.tribo.recursos.comida > 0) { this.tribo.recursos.comida--; this.fome = Math.max(0, this.fome - 80); } break;
@@ -366,7 +363,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tempo = 0; statsHistory = []; logContainer.innerHTML = '';
         
         for(let i=0; i<parseInt(numAguaInput.value); i++) aguas.push(new Agua());
-        for(let i=0; i<parseInt(numComidaInput.value); i++) comidas.push(new Comida('grama'));
+        const tiposSel = Array.from(animalSelectionDiv.querySelectorAll('input')).filter(i => parseInt(i.value) > 0).map(i => i.dataset.tipo);
+        if (tiposSel.length > 0) { for (let i = 0; i < parseInt(numComidaInput.value); i++) { const tC = DEFINICOES_ANIMAIS[tiposSel[Math.floor(Math.random() * tiposSel.length)]].come[0]; comidas.push(new Comida(tC)); } }
         animalSelectionDiv.querySelectorAll('input').forEach(i => { for(let j=0; j<parseInt(i.value); j++) { if (i.value > 0) animais.push(new Animal(i.dataset.tipo)); } });
         
         setupChart(); setGameSpeed(1); Telas.mostrar('game'); adicionarLog("A simulação começou!", "info");
@@ -416,7 +414,6 @@ document.addEventListener('DOMContentLoaded', () => {
             tribo: 'fa-solid fa-users', info: 'fa-solid fa-circle-info'
         };
         icon.className = iconMap[tipo];
-        
         logEntry.className = `log-entry-${tipo}`;
         logEntry.appendChild(icon);
         logEntry.innerHTML += `<span>[${timestamp}s]</span> ${mensagem}`;
@@ -444,6 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('inspect-idade').textContent = animalInspecionado.age.toFixed(1) + 's';
         document.getElementById('inspect-tribo').textContent = animalInspecionado.tribo ? animalInspecionado.tribo.nome : 'Nenhuma';
         document.getElementById('inspect-funcao').textContent = animalInspecionado.funcao || 'Nenhuma';
+        document.getElementById('inspect-estado').textContent = animalInspecionado.estado;
         document.getElementById('inspect-fome').style.width = `${100 - animalInspecionado.fome}%`;
         document.getElementById('inspect-sede').style.width = `${100 - animalInspecionado.sede}%`;
         document.getElementById('inspect-frio').style.width = `${animalInspecionado.frio}%`;
