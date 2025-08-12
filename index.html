@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>SimuSimu - v1.4 Estável</title>
+    <title>SimuSimu - v1.7 Final e Estável</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Importação da biblioteca de gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Importação dos Ícones (Font Awesome) para o Log -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
 </head>
 <body class="theme-dark">
@@ -32,7 +30,7 @@
     <div class="setup-section">
         <h3>Cenário e Recursos</h3>
         <div class="input-group"><label for="scenario">Cenário:</label><select id="scenario"><option value="floresta">Floresta</option><option value="aquario">Aquário</option><option value="deserto">Deserto</option></select></div>
-        <div class="input-group"><label for="numComida">Comida Inicial:</label><input type="number" id="numComida" value="15" min="1" max="50"></div>
+        <div class="input-group"><label for="numComida">Comida Inicial:</label><input type="number" id="numComida" value="20" min="1" max="100"></div>
         <div class="input-group"><label for="numAgua">Água Inicial:</label><input type="number" id="numAgua" value="5" min="1" max="20"></div>
     </div>
     <div class="setup-section">
@@ -53,15 +51,12 @@
     </div>
     
     <div id="info-panel" class="panel">
-        <!-- PAINEL PADRÃO COM ABAS -->
         <div id="main-info-panel">
             <div class="tabs">
                 <button class="tab-button active" data-tab="status">Status</button>
                 <button class="tab-button" data-tab="graficos">Gráficos</button>
                 <button class="tab-button" data-tab="log">Log</button>
             </div>
-
-            <!-- Aba de Status -->
             <div id="tab-status" class="tab-content active">
                 <h2>Status da Simulação</h2>
                 <div class="stats-grid">
@@ -69,18 +64,14 @@
                     <div class="stat-item"><span>Tempo</span><span id="tempo">0s</span></div>
                 </div>
                 <div id="animal-counts"></div>
-                
                 <h3 class="panel-subtitle">Controle de Tempo</h3>
                  <div id="time-controls" class="btn-group">
                     <button class="btn-time" data-speed="0" title="Pausar"><i class="fa-solid fa-pause"></i></button>
-                    <!-- CORREÇÃO: Botão de câmera lenta adicionado de volta -->
                     <button class="btn-time" data-speed="0.5" title="Câmera Lenta"><i class="fa-solid fa-backward-step"></i></button>
                     <button class="btn-time active" data-speed="1" title="Velocidade Normal"><i class="fa-solid fa-play"></i></button>
                     <button class="btn-time" data-speed="2" title="2x Velocidade"><i class="fa-solid fa-forward"></i></button>
                     <button class="btn-time" data-speed="5" title="5x Velocidade"><i class="fa-solid fa-forward-fast"></i></button>
                 </div>
-                
-                <!-- CORREÇÃO: Botões de interação adicionados de volta -->
                 <h3 class="panel-subtitle">Ações Manuais</h3>
                 <div class="btn-group interaction-group">
                     <button class="btn-interaction" id="btn-add-comida">Comida</button>
@@ -90,25 +81,18 @@
                     <button class="btn-interaction" id="btn-modo-territorio">Territórios</button>
                 </div>
             </div>
-
-            <!-- Aba de Gráficos -->
             <div id="tab-graficos" class="tab-content">
                 <h2>Gráfico Populacional</h2>
                 <div class="chart-container">
                     <canvas id="populationChart"></canvas>
                 </div>
             </div>
-
-            <!-- Aba de Log -->
             <div id="tab-log" class="tab-content">
                 <h2>Log de Eventos</h2>
                 <div id="log-container"></div>
             </div>
-            
             <button id="resetarSimulacao" class="btn-danger">Encerrar Simulação</button>
         </div>
-
-        <!-- PAINEL DE INSPEÇÃO -->
         <div id="inspection-panel" class="hidden">
             <div class="inspection-header">
                 <h2 id="inspect-nome">Nome do Animal</h2>
@@ -119,44 +103,31 @@
                 <p><strong>Idade:</strong> <span id="inspect-idade"></span></p>
                 <p><strong>Tribo:</strong> <span id="inspect-tribo">Nenhuma</span></p>
                 <p><strong>Função:</strong> <span id="inspect-funcao">Nenhuma</span></p>
+                <!-- NOVO CAMPO DE ESTADO -->
+                <p><strong>Ação Atual:</strong> <span id="inspect-estado"></span></p>
                 
                 <h3 class="panel-subtitle">Status</h3>
-                <div class="inspect-stat">
-                    <label>Saúde (Fome)</label>
-                    <div class="stat-bar-container"><div id="inspect-fome" class="stat-bar"></div></div>
-                </div>
-                <div class="inspect-stat">
-                    <label>Hidratação (Sede)</label>
-                    <div class="stat-bar-container"><div id="inspect-sede" class="stat-bar"></div></div>
-                </div>
-                 <div class="inspect-stat">
-                    <label>Calor (Frio)</label>
-                    <div class="stat-bar-container"><div id="inspect-frio" class="stat-bar"></div></div>
-                </div>
+                <div class="inspect-stat"><label>Saúde (Fome)</label><div class="stat-bar-container"><div id="inspect-fome" class="stat-bar"></div></div></div>
+                <div class="inspect-stat"><label>Hidratação (Sede)</label><div class="stat-bar-container"><div id="inspect-sede" class="stat-bar"></div></div></div>
+                 <div class="inspect-stat"><label>Calor (Frio)</label><div class="stat-bar-container"><div id="inspect-frio" class="stat-bar"></div></div></div>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Scripts -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const infoPanel = document.getElementById('info-panel');
     if (!infoPanel) return;
-
     infoPanel.querySelector('#main-info-panel').addEventListener('click', function(e) {
         if (e.target.closest('.tab-button')) {
             const tabButton = e.target.closest('.tab-button');
             const tabId = tabButton.dataset.tab;
-            
             infoPanel.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
             infoPanel.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
             tabButton.classList.add('active');
             document.getElementById(`tab-${tabId}`).classList.add('active');
         }
     });
-
     const themeToggleButton = document.getElementById('btn-toggle-theme');
     themeToggleButton.addEventListener('click', () => {
         document.body.classList.toggle('theme-light');
@@ -165,6 +136,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <script src="script.js"></script>
-
 </body>
 </html>
