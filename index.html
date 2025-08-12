@@ -1,9 +1,12 @@
+
+#### **Index.html:**
+```html
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>SimuSimu - v0.9</title>
+    <title>SimuSimu - v1.0</title>
     <link rel="stylesheet" href="style.css">
     <!-- Importação da biblioteca de gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -40,7 +43,7 @@
 <div id="game-container" class="hidden">
     <div id="world">
         <div id="world-overlay"></div>
-        <!-- Container para as partículas de chuva/neve -->
+        <!-- Container para as partículas de clima e efeitos -->
         <div id="particle-container"></div>
     </div>
     
@@ -75,11 +78,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
                     <span>Comida</span>
                 </button>
-                <button class="btn-interaction" id="btn-colocar-pedra" title="Adicionar uma pedra">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 14H7v-4h4v4zm0-6H7V7h4v4zm6 6h-4v-4h4v4zm0-6h-4V7h4v4z"/></svg>
-                    <span>Pedra</span>
-                </button>
-                <button class="btn-interaction" id="btn-add-rato" title="Adicionar um rato">
+                 <button class="btn-interaction" id="btn-add-rato" title="Adicionar um rato">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
                     <span>Rato</span>
                 </button>
@@ -87,9 +86,17 @@
                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
                     <span>Coelho</span>
                 </button>
+                <button class="btn-interaction" id="btn-colocar-pedra" title="Adicionar uma pedra">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 14H7v-4h4v4zm0-6H7V7h4v4zm6 6h-4v-4h4v4zm0-6h-4V7h4v4z"/></svg>
+                    <span>Pedra</span>
+                </button>
                 <button class="btn-interaction" id="btn-modo-territorio" title="Mostrar/Ocultar zonas de território">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 13C8.69 17.5 6 15.01 6 12s2.69-5.5 6-5.5 6 2.49 6 5.5-2.69 5.5-6 5.5zm0-9C9.79 8.5 8 10.08 8 12s1.79 3.5 4 3.5 4-1.58 4-3.5S14.21 8.5 12 8.5z"/></svg>
                     <span>Territórios</span>
+                </button>
+                <button class="btn-interaction" id="btn-fullscreen" title="Tela Cheia">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                    <span>Tela Cheia</span>
                 </button>
             </div>
         </div>
