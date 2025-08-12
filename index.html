@@ -3,21 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>SimuSimu - v0.5</title>
+    <title>SimuSimu - v0.6</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="theme-dark"> <!-- Começa com o tema escuro por padrão -->
 
     <!-- TELA 1: MENU PRINCIPAL -->
-    <div id="main-menu-container">
+    <div id="main-menu-container" class="panel">
         <h1 class="game-title">SimuSimu</h1>
         <p class="game-subtitle">Um Simulador de Simulações</p>
         <button id="btn-nova-simulacao">Nova Simulação</button>
         <button class="btn-disabled" title="Em breve!">Carregar Simulação</button>
+        <button id="btn-toggle-theme" class="btn-secondary">Alternar Tema</button>
     </div>
 
     <!-- TELA 2: CONFIGURAÇÃO DA SIMULAÇÃO -->
-    <div id="setup-container" class="hidden">
+    <div id="setup-container" class="panel hidden">
         <h1>Configurar Nova Simulação</h1>
         <div class="setup-section">
             <h3>Cenário e Recursos</h3>
@@ -38,20 +39,22 @@
         <div id="world">
             <div id="world-overlay"></div>
         </div>
-        <div id="info-panel">
-            <h2>Status</h2>
-            <p>População: <span id="populacaoTotal">0</span></p>
-            <p>Tempo: <span id="tempo">0</span>s</p>
+        <div id="info-panel" class="panel">
+            <h2>Status da Simulação</h2>
+            <div class="stats-grid">
+                <div class="stat-item"><span>População</span><span id="populacaoTotal">0</span></div>
+                <div class="stat-item"><span>Tempo</span><span id="tempo">0s</span></div>
+            </div>
             <div id="animal-counts"></div>
 
             <h3 class="panel-subtitle">Controle de Tempo</h3>
             <div id="time-controls" class="btn-group">
-                <button class="btn-time" data-speed="0">||</button>
-                <button class="btn-time" data-speed="0.5">0.5x</button>
-                <button class="btn-time active" data-speed="1">1x</button>
-                <button class="btn-time" data-speed="2">2x</button>
-                <button class="btn-time" data-speed="5">5x</button>
-                <button class="btn-time" data-speed="10">10x</button>
+                <!-- Ícones SVG para controles de tempo -->
+                <button class="btn-time" data-speed="0" title="Pausar"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
+                <button class="btn-time" data-speed="0.5" title="Câmera Lenta"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M10 18l-6-6 6-6v12zM18 6l-6 6 6 6V6z"/></svg></button>
+                <button class="btn-time active" data-speed="1" title="Velocidade Normal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M8 5v14l11-7z"/></svg></button>
+                <button class="btn-time" data-speed="2" title="2x Velocidade"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+                <button class="btn-time" data-speed="5" title="5x Velocidade"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg></button>
             </div>
 
             <h3 class="panel-subtitle">Interagir</h3>
